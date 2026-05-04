@@ -21,13 +21,16 @@ current_song = None
 
 async def get_audio(query):
     ydl_opts = {
-        'format': 'bestaudio',
-        'quiet': True,
-        'default_search': 'ytsearch',
-        'noplaylist': True,
-        'extract_flat': False,
-        'skip_download': True
+    'format': 'bestaudio/best',
+    'quiet': True,
+    'noplaylist': True,
+    'default_search': 'ytsearch',
+    'extract_flat': False,
+    'skip_download': True,
+    'http_headers': {
+        'User-Agent': 'Mozilla/5.0'
     }
+}
 
     def extract():
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
