@@ -24,7 +24,7 @@ async def get_audio(query):
     'format': 'bestaudio/best',
     'quiet': True,
     'noplaylist': True,
-    'default_search': 'ytsearch',
+    'default_search': 'scsearch',
     'extract_flat': False,
     'skip_download': True,
     'http_headers': {
