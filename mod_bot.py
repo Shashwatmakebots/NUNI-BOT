@@ -288,13 +288,20 @@ async def slash_join(interaction: discord.Interaction):
         await interaction.response.send_message(f"Joined {channel.name}")
     else:
         await interaction.response.send_message("You must be in a voice channel.")
+        
+#-------------Ping--------------
+
+@bot.tree.command(name="ping", description="Check bot latency")
+async def ping(interaction: discord.Interaction):
+    latency = round(bot.latency * 1000)  # convert to ms
+    await interaction.response.send_message(f"🏓 Pong! {latency}ms")
 
 
 # ================= READY =================
 
 @bot.event
 async def on_ready():
-    await tree.sync()
+    await bot.tree.sync()
     print(f"Logged in as {bot.user}")
 
 bot.run(os.getenv("TOKEN"))
