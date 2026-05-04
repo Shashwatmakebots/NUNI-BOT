@@ -5,6 +5,7 @@ import asyncio
 import yt_dlp
 from collections import deque
 import os
+import json
 print(os.getcwd())
 
 import os
@@ -182,6 +183,19 @@ async def slash_skip(interaction: discord.Interaction):
 
 # ================= MODERATION =================
 
+def load_replies():
+    try:
+        with open("autoreplies.json", "r") as f:
+            return json.load(f)
+    except:
+        return {}
+
+def save_replies(data):
+    with open("autoreplies.json", "w") as f:
+        json.dump(data, f, indent=4)
+
+autoreplies = load_replies()
+
 
 # Simple in-memory storage
 tags = {}
@@ -279,72 +293,58 @@ async def ping(interaction: discord.Interaction):
 @commands.has_permissions(moderate_members=True)
 async def removetimeout(ctx, member: discord.Member):
     await member.timeout(None)
-    await ctx.send(f"Removed timeout from {member}")
+    await ctx.send(f"Removed timeout from {member.mention}")
 
 #------------/ban-------------
 
-@bot.tree.command(name="ban", description="Ban a user")
+@bot.tree.command(name="ban", description="Ban a member")
 @app_commands.checks.has_permissions(ban_members=True)
 async def ban(interaction: discord.Interaction, member: discord.Member, reason: str = "No reason"):
     await member.ban(reason=reason)
-    await interaction.response.send_message(f"Banned {member} | Reason: {reason}")
+    await interaction.response.send_message(f"Banned {member.mention}")
 
 #----------------/timeout-------------
 
-@bot.tree.command(name="timeout", description="Timeout a user")
+from datetime import timedelta
+
+@bot.tree.command(name="timeout", description="Timeout a member")
 @app_commands.checks.has_permissions(moderate_members=True)
 async def timeout(interaction: discord.Interaction, member: discord.Member, minutes: int):
-    import datetime
-    duration = datetime.timedelta(minutes=minutes)
+    duration = timedelta(minutes=minutes)
     await member.timeout(duration)
-    await interaction.response.send_message(f"Timed out {member} for {minutes} minutes")
+    await interaction.response.send_message(f"Timed out {member.mention} for {minutes} minutes")
 
 #----------------------/role--------------
 
-@bot.tree.command(name="role", description="Give a role")
+@bot.tree.command(name="role", description="Give or remove a role")
 @app_commands.checks.has_permissions(manage_roles=True)
 async def role(interaction: discord.Interaction, member: discord.Member, role: discord.Role):
-    await member.add_roles(role)
-    await interaction.response.send_message(f"Gave {role} to {member}")
+    if role in member.roles:
+        await member.remove_roles(role)
+        await interaction.response.send_message(f"Removed {role.name} from {member.mention}")
+    else:
+        await member.add_roles(role)
+        await interaction.response.send_message(f"Added {role.name} to {member.mention}")
 
 ---------------auto-reply-system
+@bot.tree.command(name="autoreply", description="Add custom auto reply")
+@app_commands.checks.has_permissions(manage_messages=True)
+async def autoreply(interaction: discord.Interaction, trigger: str, response: str):
+    autoreplies[trigger.lower()] = response
+    save_replies(autoreplies)
+    await interaction.response.send_message(f"Added reply: '{trigger}' → '{response}'")
 
-import json
-import os
-
-RESPONSES_FILE = "responses.json"
-
-def load_responses():
-    if not os.path.exists(RESPONSES_FILE):
-        return {}
-    with open(RESPONSES_FILE, "r") as f:
-        return json.load(f)
-
-def save_responses(data):
-    with open(RESPONSES_FILE, "w") as f:
-        json.dump(data, f, indent=4)
-
-responses = load_responses()
-
-#----------/command for reply
-
-@bot.tree.command(name="addresponse", description="Add auto reply")
-async def addresponse(interaction: discord.Interaction, trigger: str, reply: str):
-    responses[trigger.lower()] = reply
-    save_responses(responses)
-    await interaction.response.send_message(f"Saved: {trigger} → {reply}")
-
-#----------auto detect system-----------
+#----------auto response----------
 
 @bot.event
 async def on_message(message):
     if message.author.bot:
         return
 
-    msg = message.content.lower()
+    content = message.content.lower()
 
-    for trigger, reply in responses.items():
-        if trigger in msg:
+    for trigger, reply in autoreplies.items():
+        if trigger in content:
             await message.channel.send(reply)
             break
 
