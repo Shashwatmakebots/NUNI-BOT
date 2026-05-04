@@ -182,29 +182,6 @@ async def slash_skip(interaction: discord.Interaction):
 
 # ================= MODERATION =================
 
-@bot.command()
-@commands.has_permissions(administrator=True)
-async def ban(ctx, member: discord.Member, *, reason=None):
-    await member.ban(reason=reason)
-    await ctx.send(f"Banned {member}")
-
-@bot.command()
-@commands.has_permissions(administrator=True)
-async def unban(ctx, user: discord.User):
-    await ctx.guild.unban(user)
-    await ctx.send(f"Unbanned {user}")
-
-@bot.command()
-@commands.has_permissions(administrator=True)
-async def kick(ctx, member: discord.Member):
-    await member.kick()
-    await ctx.send(f"Kicked {member}")
-
-@bot.command()
-@commands.has_permissions(administrator=True)
-async def timeout(ctx, member: discord.Member, seconds: int):
-    await member.timeout(discord.utils.utcnow() + discord.timedelta(seconds=seconds))
-    await ctx.send(f"Timed out {member}")
 
 # Simple in-memory storage
 tags = {}
