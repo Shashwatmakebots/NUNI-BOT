@@ -24,17 +24,14 @@ async def get_audio(query):
     'format': 'bestaudio/best',
     'quiet': True,
     'noplaylist': True,
-    'default_search': 'scsearch',
-    'extract_flat': False,
     'skip_download': True,
-    'http_headers': {
-        'User-Agent': 'Mozilla/5.0'
-    }
+    'default_search': 'scsearch1',   # 👈 IMPORTANT CHANGE
+    'extract_flat': False
 }
 
     def extract():
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-            return ydl.extract_info(f"scsearch1:{query}", download=False)
+            return ydl.extract_info(query, download=False)
 
     data = await asyncio.to_thread(extract)
 
