@@ -326,8 +326,8 @@ async def role(interaction: discord.Interaction, member: discord.Member, role: d
         await member.add_roles(role)
         await interaction.response.send_message(f"Added {role.name} to {member.mention}")
 
+@app_commands.checks.has_permissions(administrator=True)
 @bot.tree.command(name="autoreply", description="Add custom auto reply")
-@app_commands.checks.has_permissions(manage_messages=True)
 async def autoreply(interaction: discord.Interaction, trigger: str, response: str):
     autoreplies[trigger.lower()] = response
     save_replies(autoreplies)
