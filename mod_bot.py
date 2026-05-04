@@ -296,6 +296,83 @@ async def ping(interaction: discord.Interaction):
     latency = round(bot.latency * 1000)  # convert to ms
     await interaction.response.send_message(f"🏓 Pong! {latency}ms")
 
+#------------,ban-------------
+
+@bot.command()
+@commands.has_permissions(moderate_members=True)
+async def removetimeout(ctx, member: discord.Member):
+    await member.timeout(None)
+    await ctx.send(f"Removed timeout from {member}")
+
+#------------/ban-------------
+
+@bot.tree.command(name="ban", description="Ban a user")
+@app_commands.checks.has_permissions(ban_members=True)
+async def ban(interaction: discord.Interaction, member: discord.Member, reason: str = "No reason"):
+    await member.ban(reason=reason)
+    await interaction.response.send_message(f"Banned {member} | Reason: {reason}")
+
+#----------------/timeout-------------
+
+@bot.tree.command(name="timeout", description="Timeout a user")
+@app_commands.checks.has_permissions(moderate_members=True)
+async def timeout(interaction: discord.Interaction, member: discord.Member, minutes: int):
+    import datetime
+    duration = datetime.timedelta(minutes=minutes)
+    await member.timeout(duration)
+    await interaction.response.send_message(f"Timed out {member} for {minutes} minutes")
+
+#----------------------/role--------------
+
+@bot.tree.command(name="role", description="Give a role")
+@app_commands.checks.has_permissions(manage_roles=True)
+async def role(interaction: discord.Interaction, member: discord.Member, role: discord.Role):
+    await member.add_roles(role)
+    await interaction.response.send_message(f"Gave {role} to {member}")
+
+---------------auto-reply-system
+
+import json
+import os
+
+RESPONSES_FILE = "responses.json"
+
+def load_responses():
+    if not os.path.exists(RESPONSES_FILE):
+        return {}
+    with open(RESPONSES_FILE, "r") as f:
+        return json.load(f)
+
+def save_responses(data):
+    with open(RESPONSES_FILE, "w") as f:
+        json.dump(data, f, indent=4)
+
+responses = load_responses()
+
+#----------/command for reply
+
+@bot.tree.command(name="addresponse", description="Add auto reply")
+async def addresponse(interaction: discord.Interaction, trigger: str, reply: str):
+    responses[trigger.lower()] = reply
+    save_responses(responses)
+    await interaction.response.send_message(f"Saved: {trigger} → {reply}")
+
+#----------auto detect system-----------
+
+@bot.event
+async def on_message(message):
+    if message.author.bot:
+        return
+
+    msg = message.content.lower()
+
+    for trigger, reply in responses.items():
+        if trigger in msg:
+            await message.channel.send(reply)
+            break
+
+    await bot.process_commands(message)
+
 
 # ================= READY =================
 
