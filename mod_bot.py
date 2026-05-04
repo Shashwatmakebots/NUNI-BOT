@@ -34,7 +34,7 @@ async def get_audio(query):
 
     def extract():
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-            return ydl.extract_info(query, download=False)
+            return ydl.extract_info(f"scsearch1:{query}", download=False)
 
     data = await asyncio.to_thread(extract)
 
