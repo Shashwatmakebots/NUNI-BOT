@@ -349,6 +349,38 @@ async def on_message(message):
 
     await bot.process_commands(message)
 
+@bot.tree.command(name="listautoreplies", description="Show all auto replies")
+@app_commands.checks.has_permissions(administrator=True)
+async def listautoreplies(interaction: discord.Interaction):
+
+    if not autoreplies:
+        await interaction.response.send_message("No auto replies setup.")
+        return
+
+    msg = "**Auto Replies:**\n"
+
+    for trigger, reply in autoreplies.items():
+        msg += f"• `{trigger}` → `{reply}`\n"
+
+    await interaction.response.send_message(msg)
+
+@bot.tree.command(name="removeautoreply", description="Remove an auto reply")
+@app_commands.checks.has_permissions(administrator=True)
+async def removeautoreply(interaction: discord.Interaction, trigger: str):
+
+    trigger = trigger.lower()
+
+    if trigger not in autoreplies:
+        await interaction.response.send_message("❌ Trigger not found.")
+        return
+
+    del autoreplies[trigger]
+    save_replies(autoreplies)
+
+    await interaction.response.send_message(
+        f"✅ Removed auto reply for `{trigger}`"
+    )
+
 
 # ================= READY =================
 
