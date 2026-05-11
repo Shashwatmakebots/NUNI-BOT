@@ -18,6 +18,22 @@ tree = bot.tree
 music_queue = deque()
 current_song = None
 
+def load_leave_settings():
+    try:
+        with open("leave_settings.json", "r") as f:
+            return json.load(f)
+    except:
+        return {
+            "message": "We will miss you ❤️",
+            "gif": ""
+        }
+
+def save_leave_settings(data):
+    with open("leave_settings.json", "w") as f:
+        json.dump(data, f, indent=4)
+
+leave_settings = load_leave_settings()
+
 # ================= AUDIO =================
 
 async def get_audio(query):
@@ -380,6 +396,49 @@ async def removeautoreply(interaction: discord.Interaction, trigger: str):
     await interaction.response.send_message(
         f"✅ Removed auto reply for `{trigger}`"
     )
+
+@bot.tree.command(name="setleavemessage", description="Set leave DM message")
+@app_commands.checks.has_permissions(administrator=True)
+async def setleavemessage(interaction: discord.Interaction, message: str):
+
+    leave_settings["message"] = message
+    save_leave_settings(leave_settings)
+
+    await interaction.response.send_message(
+        "✅ Leave message updated.",
+        ephemeral=True
+    )
+
+@bot.tree.command(name="setleavegif", description="Set leave GIF")
+@app_commands.checks.has_permissions(administrator=True)
+async def setleavegif(interaction: discord.Interaction, gif_url: str):
+
+    leave_settings["gif"] = gif_url
+    save_leave_settings(leave_settings)
+
+    await interaction.response.send_message(
+        "✅ Leave GIF updated.",
+        ephemeral=True
+    )
+
+@bot.event
+async def on_member_remove(member):
+
+    embed = discord.Embed(
+        title="😢 We will miss you!",
+        description=leave_settings["message"],
+        color=discord.Color.red()
+    )
+
+    if leave_settings["gif"]:
+        embed.set_image(url=leave_settings["gif"])
+
+    embed.set_footer(text=member.guild.name)
+
+    try:
+        await member.send(embed=embed)
+    except:
+        print(f"Could not DM {member.name}")
 
 
 # ================= READY =================
