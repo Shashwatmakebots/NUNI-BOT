@@ -677,6 +677,7 @@ else:
         )
 
         await msg.edit(embed=crash_embed, view=None)
+       
         return
 
     # LIVE MULTIPLIER EMBED
