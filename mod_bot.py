@@ -617,7 +617,7 @@ else:
                 )
 
                 await msg.edit(embed=auto_embed, view=None)
-                return
+        return
 
     # CRASH CHECK
     if view.multiplier >= crash_point:
