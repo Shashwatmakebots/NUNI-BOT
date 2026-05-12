@@ -584,43 +584,76 @@ else:
 
     while not view.crashed and not view.cashed_out:
 
-        await asyncio.sleep(1)
+    await asyncio.sleep(1)
 
-        view.multiplier += 0.25
+    view.multiplier += 0.25
 
-        if view.multiplier >= crash_point:
+    # AUTO CASHOUT
+    if auto_cashout is not None:
 
-            view.crashed = True
+        if view.multiplier >= auto_cashout:
 
-            crash_embed = discord.Embed(
-                title="💥 Rocket Crashed!",
-                description=(
-                    f"Crashed at **{view.multiplier:.2f}x**\n"
-                    f"You lost {bet} credits."
-                ),
-                color=discord.Color.red()
-            )
+            if not view.cashed_out:
 
-            crash_embed.set_image(
-    url="https://media.giphy.com/media/26ufdipQqU2lhNA4g/giphy.gif"
-)
+                view.cashed_out = True
 
-            await msg.edit(embed=crash_embed, view=None)
-            return
+                winnings = int(bet * view.multiplier)
 
-        live_embed = discord.Embed(
-            title="🚀 Rocket Flying",
+                credits[user_id] += winnings
+                save_credits(credits)
+
+                auto_embed = discord.Embed(
+                    title="💰 Auto Cashed Out!",
+                    description=(
+                        f"Auto cashout at "
+                        f"**{view.multiplier:.2f}x**\n"
+                        f"Won {winnings} credits!"
+                    ),
+                    color=discord.Color.gold()
+                )
+
+                auto_embed.set_image(
+                    url="https://media.giphy.com/media/l3vR85PnGsBwu1PFK/giphy.gif"
+                )
+
+                await msg.edit(embed=auto_embed, view=None)
+                return
+
+    # CRASH CHECK
+    if view.multiplier >= crash_point:
+
+        view.crashed = True
+
+        crash_embed = discord.Embed(
+            title="💥 Rocket Crashed!",
             description=(
-                f"Multiplier: **{view.multiplier:.2f}x**"
+                f"Crashed at **{view.multiplier:.2f}x**\n"
+                f"You lost {bet} credits."
             ),
-            color=discord.Color.green()
+            color=discord.Color.red()
         )
 
-        live_embed.set_image(
-    url="https://media.giphy.com/media/l3vR85PnGsBwu1PFK/giphy.gif"
-)
+        crash_embed.set_image(
+            url="https://media.giphy.com/media/26ufdipQqU2lhNA4g/giphy.gif"
+        )
 
-        await msg.edit(embed=live_embed, view=view)
+        await msg.edit(embed=crash_embed, view=None)
+        return
+
+    # LIVE MULTIPLIER EMBED
+    live_embed = discord.Embed(
+        title="🚀 Rocket Flying",
+        description=(
+            f"Multiplier: **{view.multiplier:.2f}x**"
+        ),
+        color=discord.Color.green()
+    )
+
+    live_embed.set_image(
+        url="https://media.giphy.com/media/l3vR85PnGsBwu1PFK/giphy.gif"
+    )
+
+    await msg.edit(embed=live_embed, view=view)
 
 @bot.tree.command(name="addcredits", description="Add credits to a user")
 @app_commands.checks.has_permissions(administrator=True)
