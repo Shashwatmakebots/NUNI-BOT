@@ -682,6 +682,78 @@ async def addcredits(
         ephemeral=True
     )
 
+@bot.tree.command(name="plinko", description="Play Plinko")
+async def plinko(
+    interaction: discord.Interaction,
+    bet: int
+):
+
+    user_id = str(interaction.user.id)
+
+    if user_id not in credits:
+        credits[user_id] = 0
+
+    if bet <= 0:
+        await interaction.response.send_message(
+            "❌ Invalid bet."
+        )
+        return
+
+    if credits[user_id] < bet:
+        await interaction.response.send_message(
+            "❌ Not enough credits."
+        )
+        return
+
+    credits[user_id] -= bet
+
+    # MULTIPLIERS
+    multipliers = [
+        0.2,
+        0.5,
+        0.8,
+        1.2,
+        2,
+        5,
+        10
+    ]
+
+    # WEIGHTED CHANCES
+    weights = [
+        30,
+        25,
+        20,
+        15,
+        7,
+        2,
+        1
+    ]
+
+    multiplier = random.choices(
+        multipliers,
+        weights=weights
+    )[0]
+
+    winnings = int(bet * multiplier)
+
+    credits[user_id] += winnings
+
+    save_credits(credits)
+
+    embed = discord.Embed(
+        title="🎯 Plinko",
+        description=(
+            f"Ball landed on "
+            f"**{multiplier}x**\n\n"
+            f"💰 Won: {winnings} credits"
+        ),
+        color=discord.Color.blurple()
+    )
+
+    await interaction.response.send_message(
+        embed=embed
+    )
+
 
 
 
