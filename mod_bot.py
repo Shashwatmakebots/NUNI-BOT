@@ -465,19 +465,22 @@ async def removeautoreply(interaction: discord.Interaction, trigger: str):
 
 
 
-@bot.tree.command(name="setwinchance", description="Set game win chance")
+@bot.tree.command(name="setwinchance")
 @app_commands.checks.has_permissions(administrator=True)
-async def setwinchance(interaction: discord.Interaction, percent: int):
+async def setwinchance(
+    interaction: discord.Interaction,
+    percent: int
+):
 
-    if percent < 0 or percent > 100:
+    if percent < 1 or percent > 100:
         await interaction.response.send_message(
-            "❌ Enter 0-100",
+            "❌ Use 1-100",
             ephemeral=True
         )
         return
 
-    settings["win_chance"] = percent
-    save_settings(settings)
+    game_settings["global_win_chance"] = percent
+    save_game_settings(game_settings)
 
     await interaction.response.send_message(
         f"✅ Win chance set to {percent}%",
@@ -559,7 +562,25 @@ async def rocket(interaction: discord.Interaction, bet: int):
 
     msg = await interaction.original_response()
 
-    crash_point = round(random.uniform(1.5, 10.0), 2)
+    roll = random.randint(1, 100)
+
+# TROLL MODE
+if game_settings["rocket_rigged"]:
+
+    crash_point = round(random.uniform(1.00, 1.30), 2)
+
+# NORMAL MODE
+else:
+
+    # lose chance
+    if roll > game_settings["global_win_chance"]:
+
+        crash_point = round(random.uniform(1.00, 2.50), 2)
+
+    # win chance
+    else:
+
+        crash_point = round(random.uniform(3.00, 15.00), 2)
 
     while not view.crashed and not view.cashed_out:
 
@@ -580,6 +601,10 @@ async def rocket(interaction: discord.Interaction, bet: int):
                 color=discord.Color.red()
             )
 
+            crash_embed.set_image(
+    url="https://media.giphy.com/media/26ufdipQqU2lhNA4g/giphy.gif"
+)
+
             await msg.edit(embed=crash_embed, view=None)
             return
 
@@ -590,6 +615,10 @@ async def rocket(interaction: discord.Interaction, bet: int):
             ),
             color=discord.Color.green()
         )
+
+        live_embed.set_image(
+    url="https://media.giphy.com/media/l3vR85PnGsBwu1PFK/giphy.gif"
+)
 
         await msg.edit(embed=live_embed, view=view)
 
