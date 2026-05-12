@@ -19,6 +19,18 @@ tree = bot.tree
 music_queue = deque()
 current_song = None
 
+def load_credits():
+    try:
+        with open("credits.json", "r") as f:
+            return json.load(f)
+    except:
+        return {}
+
+def save_credits(data):
+    with open("credits.json", "w") as f:
+        json.dump(data, f, indent=4)
+
+credits = load_credits()
 
 def load_game_settings():
     try:
