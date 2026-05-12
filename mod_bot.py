@@ -560,7 +560,7 @@ async def rocket(
     )
 
     embed.set_image(
-        url="https://media.giphy.com/media/l3vR85PnGsBwu1PFK/giphy.gif"
+        url="https://media.tenor.com/CLHrRkRJZFIAAAAi/snoopy-aviator-aviation.gif"
     )
 
     await interaction.response.send_message(
@@ -617,7 +617,7 @@ async def rocket(
                 )
 
                 auto_embed.set_image(
-                    url="https://images-ext-1.discordapp.net/external/49PMFjMxPL9Ma-nvwfw6hFczA_mX7hfuMKpyrzpwUSo/https/media.tenor.com/CLHrRkRJZFIAAAPo/snoopy-aviator-aviation.mp4"
+                    url="https://media.tenor.com/CLHrRkRJZFIAAAAi/snoopy-aviator-aviation.gif"
                 )
 
                 await msg.edit(embed=auto_embed, view=None)
@@ -639,7 +639,7 @@ async def rocket(
             )
 
             crash_embed.set_image(
-                url="https://images-ext-1.discordapp.net/external/89-cGUAJZH1K6aIQV3cF67-yKAcX5p_kGvd6o5Gdqws/https/media.tenor.com/QnZrplecSiQAAAPo/explosion-bear-grylls.mp4"
+                url="https://media.tenor.com/QnZrplecSiQAAAAC/explosion-bear-grylls.gif"
             )
 
             await msg.edit(embed=crash_embed, view=None)
@@ -655,7 +655,7 @@ async def rocket(
         )
 
         live_embed.set_image(
-            url="https://images-ext-1.discordapp.net/external/49PMFjMxPL9Ma-nvwfw6hFczA_mX7hfuMKpyrzpwUSo/https/media.tenor.com/CLHrRkRJZFIAAAPo/snoopy-aviator-aviation.mp4"
+            url="https://media.tenor.com/CLHrRkRJZFIAAAAi/snoopy-aviator-aviation.gif"
         )
 
         await msg.edit(embed=live_embed, view=view)
