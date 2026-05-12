@@ -583,8 +583,8 @@ else:
         crash_point = round(random.uniform(3.00, 15.00), 2)
 
     while not view.crashed and not view.cashed_out:
-
-    await asyncio.sleep(1)
+        
+        await asyncio.sleep(1)
 
     view.multiplier += 0.25
 
