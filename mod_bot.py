@@ -593,6 +593,28 @@ async def rocket(interaction: discord.Interaction, bet: int):
 
         await msg.edit(embed=live_embed, view=view)
 
+@bot.tree.command(name="addcredits", description="Add credits to a user")
+@app_commands.checks.has_permissions(administrator=True)
+async def addcredits(
+    interaction: discord.Interaction,
+    member: discord.Member,
+    amount: int
+):
+
+    user_id = str(member.id)
+
+    if user_id not in credits:
+        credits[user_id] = 0
+
+    credits[user_id] += amount
+
+    save_credits(credits)
+
+    await interaction.response.send_message(
+        f"✅ Added {amount} credits to {member.mention}",
+        ephemeral=True
+    )
+
 
 
 
