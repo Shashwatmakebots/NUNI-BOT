@@ -19,21 +19,74 @@ tree = bot.tree
 music_queue = deque()
 current_song = None
 
-def load_leave_settings():
+
+def load_game_settings():
     try:
-        with open("leave_settings.json", "r") as f:
+        with open("game_settings.json", "r") as f:
             return json.load(f)
     except:
         return {
-            "message": "We will miss you ❤️",
-            "gif": ""
+            "rocket_rigged": False,
+            "limbo_rigged": False,
+            "mines_rigged": False,
+            "plinko_rigged": False,
+            "global_win_chance": 20
         }
 
-def save_leave_settings(data):
-    with open("leave_settings.json", "w") as f:
+def save_game_settings(data):
+    with open("game_settings.json", "w") as f:
         json.dump(data, f, indent=4)
 
-leave_settings = load_leave_settings()
+game_settings = load_game_settings()
+
+class RocketView(discord.ui.View):
+
+    def __init__(self, user, bet):
+        super().__init__(timeout=30)
+
+        self.user = user
+        self.bet = bet
+        self.multiplier = 1.00
+        self.crashed = False
+        self.cashed_out = False
+
+    @discord.ui.button(label="💸 Cashout", style=discord.ButtonStyle.green)
+    async def cashout(
+        self,
+        interaction: discord.Interaction,
+        button: discord.ui.Button
+    ):
+
+        if interaction.user != self.user:
+            await interaction.response.send_message(
+                "❌ This is not your game.",
+                ephemeral=True
+            )
+            return
+
+        if self.crashed:
+            await interaction.response.send_message(
+                "❌ Rocket already crashed.",
+                ephemeral=True
+            )
+            return
+
+        if self.cashed_out:
+            return
+
+        self.cashed_out = True
+
+        winnings = int(self.bet * self.multiplier)
+
+        user_id = str(self.user.id)
+
+        credits[user_id] += winnings
+        save_credits(credits)
+
+        await interaction.response.send_message(
+            f"💰 Cashed out at {self.multiplier:.2f}x\n"
+            f"You won {winnings} credits!"
+        )
 
 # ================= AUDIO =================
 
@@ -398,41 +451,137 @@ async def removeautoreply(interaction: discord.Interaction, trigger: str):
         f"✅ Removed auto reply for `{trigger}`"
     )
 
-@bot.tree.command(name="setleavemessage", description="Set leave DM message")
-@app_commands.checks.has_permissions(administrator=True)
-async def setleavemessage(interaction: discord.Interaction, message: str):
 
-    leave_settings["message"] = message
-    save_leave_settings(leave_settings)
+
+@bot.tree.command(name="setwinchance", description="Set game win chance")
+@app_commands.checks.has_permissions(administrator=True)
+async def setwinchance(interaction: discord.Interaction, percent: int):
+
+    if percent < 0 or percent > 100:
+        await interaction.response.send_message(
+            "❌ Enter 0-100",
+            ephemeral=True
+        )
+        return
+
+    settings["win_chance"] = percent
+    save_settings(settings)
 
     await interaction.response.send_message(
-        "✅ Leave message updated.",
+        f"✅ Win chance set to {percent}%",
         ephemeral=True
     )
 
-@bot.tree.command(name="setleavegif", description="Set leave GIF")
-@app_commands.checks.has_permissions(administrator=True)
-async def setleavegif(interaction: discord.Interaction, gif_url: str):
+@bot.tree.command(name="balance")
+async def balance(interaction: discord.Interaction):
 
-    leave_settings["gif"] = gif_url
-    save_leave_settings(leave_settings)
+    user_id = str(interaction.user.id)
+
+    if user_id not in credits:
+        credits[user_id] = 0
+        save_credits(credits)
 
     await interaction.response.send_message(
-        "✅ Leave GIF updated.",
+        f"💰 Balance: {credits[user_id]}"
+    )
+
+@bot.tree.command(name="rigrocket")
+@app_commands.checks.has_permissions(administrator=True)
+async def rigrocket(interaction: discord.Interaction):
+
+    game_settings["rocket_rigged"] = True
+    save_game_settings(game_settings)
+
+    await interaction.response.send_message(
+        "🚀 Rocket troll mode enabled.",
         ephemeral=True
     )
 
-@bot.event
-async def on_member_remove(member):
+@bot.tree.command(name="unrigrocket")
+@app_commands.checks.has_permissions(administrator=True)
+async def unrigrocket(interaction: discord.Interaction):
 
-    print(f"{member.name} left the server")
+    game_settings["rocket_rigged"] = False
+    save_game_settings(game_settings)
 
-    try:
-        await member.send("😢 Goodbye! Test DM works!")
-        print("DM SENT SUCCESSFULLY")
+    await interaction.response.send_message(
+        "✅ Rocket normal mode enabled.",
+        ephemeral=True
+    )
 
-    except Exception as e:
-        print(f"DM FAILED: {e}")
+@bot.tree.command(name="rocket", description="Play Rocket")
+async def rocket(interaction: discord.Interaction, bet: int):
+
+    user_id = str(interaction.user.id)
+
+    if user_id not in credits:
+        credits[user_id] = 0
+
+    if bet <= 0:
+        await interaction.response.send_message(
+            "❌ Invalid bet."
+        )
+        return
+
+    if credits[user_id] < bet:
+        await interaction.response.send_message(
+            "❌ Not enough credits."
+        )
+        return
+
+    credits[user_id] -= bet
+    save_credits(credits)
+
+    view = RocketView(interaction.user, bet)
+
+    embed = discord.Embed(
+        title="🚀 Rocket Game",
+        description="Multiplier: **1.00x**",
+        color=discord.Color.blue()
+    )
+
+    message = await interaction.response.send_message(
+        embed=embed,
+        view=view
+    )
+
+    msg = await interaction.original_response()
+
+    crash_point = round(random.uniform(1.5, 10.0), 2)
+
+    while not view.crashed and not view.cashed_out:
+
+        await asyncio.sleep(1)
+
+        view.multiplier += 0.25
+
+        if view.multiplier >= crash_point:
+
+            view.crashed = True
+
+            crash_embed = discord.Embed(
+                title="💥 Rocket Crashed!",
+                description=(
+                    f"Crashed at **{view.multiplier:.2f}x**\n"
+                    f"You lost {bet} credits."
+                ),
+                color=discord.Color.red()
+            )
+
+            await msg.edit(embed=crash_embed, view=None)
+            return
+
+        live_embed = discord.Embed(
+            title="🚀 Rocket Flying",
+            description=(
+                f"Multiplier: **{view.multiplier:.2f}x**"
+            ),
+            color=discord.Color.green()
+        )
+
+        await msg.edit(embed=live_embed, view=view)
+
+
 
 
 # ================= READY =================
