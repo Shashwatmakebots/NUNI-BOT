@@ -639,7 +639,7 @@ async def rocket(
             )
 
             crash_embed.set_image(
-                url="https://media.giphy.com/media/26ufdipQqU2lhNA4g/giphy.gif"
+                url="https://tenor.com/view/explosion-bear-grylls-you-vs-wild-out-cold-hot-bomb-gif-23429816"
             )
 
             await msg.edit(embed=crash_embed, view=None)
@@ -655,7 +655,7 @@ async def rocket(
         )
 
         live_embed.set_image(
-            url="https://media.giphy.com/media/l3vR85PnGsBwu1PFK/giphy.gif"
+            url="https://tenor.com/view/snoopy-aviator-aviation-flying-pilot-gif-9087066"
         )
 
         await msg.edit(embed=live_embed, view=view)
