@@ -617,7 +617,7 @@ async def rocket(
                 )
 
                 auto_embed.set_image(
-                    url="https://media.giphy.com/media/l3vR85PnGsBwu1PFK/giphy.gif"
+                    url="https://images-ext-1.discordapp.net/external/49PMFjMxPL9Ma-nvwfw6hFczA_mX7hfuMKpyrzpwUSo/https/media.tenor.com/CLHrRkRJZFIAAAPo/snoopy-aviator-aviation.mp4"
                 )
 
                 await msg.edit(embed=auto_embed, view=None)
@@ -639,7 +639,7 @@ async def rocket(
             )
 
             crash_embed.set_image(
-                url="https://tenor.com/view/explosion-bear-grylls-you-vs-wild-out-cold-hot-bomb-gif-23429816"
+                url="https://images-ext-1.discordapp.net/external/89-cGUAJZH1K6aIQV3cF67-yKAcX5p_kGvd6o5Gdqws/https/media.tenor.com/QnZrplecSiQAAAPo/explosion-bear-grylls.mp4"
             )
 
             await msg.edit(embed=crash_embed, view=None)
@@ -655,7 +655,7 @@ async def rocket(
         )
 
         live_embed.set_image(
-            url="https://tenor.com/view/snoopy-aviator-aviation-flying-pilot-gif-9087066"
+            url="https://images-ext-1.discordapp.net/external/49PMFjMxPL9Ma-nvwfw6hFczA_mX7hfuMKpyrzpwUSo/https/media.tenor.com/CLHrRkRJZFIAAAPo/snoopy-aviator-aviation.mp4"
         )
 
         await msg.edit(embed=live_embed, view=view)
