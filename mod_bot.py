@@ -424,21 +424,14 @@ async def setleavegif(interaction: discord.Interaction, gif_url: str):
 @bot.event
 async def on_member_remove(member):
 
-    embed = discord.Embed(
-        title="😢 We will miss you!",
-        description=leave_settings["message"],
-        color=discord.Color.red()
-    )
-
-    if leave_settings["gif"]:
-        embed.set_image(url=leave_settings["gif"])
-
-    embed.set_footer(text=member.guild.name)
+    print(f"{member.name} left the server")
 
     try:
-        await member.send(embed=embed)
-    except:
-        print(f"Could not DM {member.name}")
+        await member.send("😢 Goodbye! Test DM works!")
+        print("DM SENT SUCCESSFULLY")
+
+    except Exception as e:
+        print(f"DM FAILED: {e}")
 
 
 # ================= READY =================
