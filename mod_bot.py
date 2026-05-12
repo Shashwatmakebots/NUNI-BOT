@@ -605,9 +605,9 @@ else:
                 auto_embed = discord.Embed(
                     title="💰 Auto Cashed Out!",
                     description=(
-                        f"Auto cashout at "
+                        f"Auto cashed out at "
                         f"**{view.multiplier:.2f}x**\n"
-                        f"Won {winnings} credits!"
+                        f"You won {winnings} credits!"
                     ),
                     color=discord.Color.gold()
                 )
@@ -617,6 +617,45 @@ else:
                 )
 
                 await msg.edit(embed=auto_embed, view=None)
+                return
+
+    # CRASH CHECK
+    if view.multiplier >= crash_point:
+
+        view.crashed = True
+
+        crash_embed = discord.Embed(
+            title="💥 Rocket Crashed!",
+            description=(
+                f"Crashed at "
+                f"**{view.multiplier:.2f}x**\n"
+                f"You lost {bet} credits."
+            ),
+            color=discord.Color.red()
+        )
+
+        crash_embed.set_image(
+            url="https://media.giphy.com/media/26ufdipQqU2lhNA4g/giphy.gif"
+        )
+
+        await msg.edit(embed=crash_embed, view=None)
+        return
+
+    # LIVE EMBED
+    live_embed = discord.Embed(
+        title="🚀 Rocket Flying",
+        description=(
+            f"Multiplier: "
+            f"**{view.multiplier:.2f}x**"
+        ),
+        color=discord.Color.green()
+    )
+
+    live_embed.set_image(
+        url="https://media.giphy.com/media/l3vR85PnGsBwu1PFK/giphy.gif"
+    )
+
+    await msg.edit(embed=live_embed, view=view)
                 return
 
     # CRASH CHECK
