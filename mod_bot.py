@@ -7,6 +7,7 @@ from collections import deque
 import os
 import json
 import random
+import io
 print(os.getcwd())
 
 import os
@@ -754,6 +755,7 @@ async def plinko(
         embed=embed
     )
 
+
 BATTLE_ROLE_ID = 1504803696213495899
 
 SUPPORT_CATEGORY_ID = 1504815315425431552
@@ -768,25 +770,29 @@ PANEL_CHANNEL_ID = 1504813235050647613
 
 BATTLE_EMOJI = "💖"
 
+vote_messages = []
+vote_started = False
+
 @bot.tree.command(name="setemoji")
 async def setemoji(
     interaction: discord.Interaction,
     emoji: str
 ):
 
-    global BATTLE_EMOJI
-
     if BATTLE_ROLE_ID not in [r.id for r in interaction.user.roles]:
+
         await interaction.response.send_message(
             "❌ No permission.",
             ephemeral=True
         )
         return
 
+    global BATTLE_EMOJI
+
     BATTLE_EMOJI = emoji
 
     await interaction.response.send_message(
-        f"✅ Battle emoji set to {emoji}",
+        f"✅ Emoji changed to {emoji}",
         ephemeral=True
     )
 
@@ -801,6 +807,7 @@ async def serverbattle(
 ):
 
     if BATTLE_ROLE_ID not in [r.id for r in interaction.user.roles]:
+
         await interaction.response.send_message(
             "❌ No permission.",
             ephemeral=True
@@ -831,6 +838,192 @@ async def serverbattle(
         "✅ Server battle panel created.",
         ephemeral=True
     )
+
+class DeleteTicketView(discord.ui.View):
+
+    def __init__(self):
+        super().__init__(timeout=None)
+
+    @discord.ui.button(
+        label="Delete Ticket",
+        style=discord.ButtonStyle.red,
+        emoji="🗑️"
+    )
+    async def delete_ticket(
+        self,
+        interaction: discord.Interaction,
+        button: discord.ui.Button
+    ):
+
+        support_role = discord.utils.get(
+            interaction.guild.roles,
+            id=SUPPORT_PING_ROLE
+        )
+
+        if support_role not in interaction.user.roles:
+
+            await interaction.response.send_message(
+                "❌ No permission.",
+                ephemeral=True
+            )
+            return
+
+        await interaction.response.send_message(
+            "🗑️ Deleting ticket in 5 seconds..."
+        )
+
+        await asyncio.sleep(5)
+
+        await interaction.channel.delete()
+
+class TicketControls(discord.ui.View):
+
+    def __init__(self):
+        super().__init__(timeout=None)
+
+    @discord.ui.button(
+        label="Claim Ticket",
+        style=discord.ButtonStyle.green,
+        emoji="✅"
+    )
+    async def claim_ticket(
+        self,
+        interaction: discord.Interaction,
+        button: discord.ui.Button
+    ):
+
+        support_role = discord.utils.get(
+            interaction.guild.roles,
+            id=SUPPORT_PING_ROLE
+        )
+
+        if support_role not in interaction.user.roles:
+
+            await interaction.response.send_message(
+                "❌ No permission.",
+                ephemeral=True
+            )
+            return
+
+        embed = discord.Embed(
+            title="✅ Ticket Claimed",
+            description=(
+                f"{interaction.user.mention} claimed this ticket."
+            ),
+            color=discord.Color.green()
+        )
+
+        await interaction.channel.send(embed=embed)
+
+        await interaction.response.send_message(
+            "✅ Ticket claimed.",
+            ephemeral=True
+        )
+
+    @discord.ui.button(
+        label="Transcript",
+        style=discord.ButtonStyle.blurple,
+        emoji="📄"
+    )
+    async def transcript_ticket(
+        self,
+        interaction: discord.Interaction,
+        button: discord.ui.Button
+    ):
+
+        messages = []
+
+        async for msg in interaction.channel.history(
+            limit=None,
+            oldest_first=True
+        ):
+
+            messages.append(
+                f"{msg.author}: {msg.content}"
+            )
+
+        transcript = "\n".join(messages)
+
+        file = discord.File(
+            fp=io.StringIO(transcript),
+            filename="transcript.txt"
+        )
+
+        try:
+
+            await interaction.user.send(
+                "📄 Ticket Transcript",
+                file=file
+            )
+
+            await interaction.response.send_message(
+                "✅ Transcript sent in DM.",
+                ephemeral=True
+            )
+
+        except:
+
+            await interaction.response.send_message(
+                "❌ Your DMs are closed.",
+                ephemeral=True
+            )
+
+    @discord.ui.button(
+        label="Close Ticket",
+        style=discord.ButtonStyle.red,
+        emoji="🔒"
+    )
+    async def close_ticket(
+        self,
+        interaction: discord.Interaction,
+        button: discord.ui.Button
+    ):
+
+        support_role = discord.utils.get(
+            interaction.guild.roles,
+            id=SUPPORT_PING_ROLE
+        )
+
+        if support_role not in interaction.user.roles:
+
+            await interaction.response.send_message(
+                "❌ No permission.",
+                ephemeral=True
+            )
+            return
+
+        user = None
+
+        for overwrite in interaction.channel.overwrites:
+
+            if isinstance(overwrite, discord.Member):
+                user = overwrite
+                break
+
+        if user:
+
+            await interaction.channel.set_permissions(
+                user,
+                view_channel=False
+            )
+
+            await interaction.channel.edit(
+                name=f"closed-{user.name}"
+            )
+
+        close_embed = discord.Embed(
+            title="🔒 Ticket Closed",
+            description=(
+                "User can no longer see this ticket.\n\n"
+                "Staff may now choose to delete it."
+            ),
+            color=discord.Color.red()
+        )
+
+        await interaction.response.send_message(
+            embed=close_embed,
+            view=DeleteTicketView()
+        )
 
 class SupportPanel(discord.ui.View):
 
@@ -877,7 +1070,8 @@ class SupportPanel(discord.ui.View):
         await channel.send(
             f"{interaction.user.mention} "
             f"{role.mention}\n\n"
-            f"✅ Staff will reach out to you soon."
+            f"✅ Staff will reach out to you soon.",
+            view=TicketControls()
         )
 
         await interaction.response.send_message(
@@ -925,7 +1119,8 @@ class SupportPanel(discord.ui.View):
         await channel.send(
             f"{interaction.user.mention} "
             f"{role.mention}\n\n"
-            f"✅ Staff will reach out to you soon."
+            f"✅ Staff will reach out to you soon.",
+            view=TicketControls()
         )
 
         await interaction.response.send_message(
@@ -973,7 +1168,8 @@ class SupportPanel(discord.ui.View):
         await channel.send(
             f"{interaction.user.mention} "
             f"{role.mention}\n\n"
-            f"✅ Staff will reach out to you soon."
+            f"✅ Staff will reach out to you soon.",
+            view=TicketControls()
         )
 
         await interaction.response.send_message(
@@ -985,6 +1181,7 @@ class SupportPanel(discord.ui.View):
 async def sendpanel(interaction: discord.Interaction):
 
     if BATTLE_ROLE_ID not in [r.id for r in interaction.user.roles]:
+
         await interaction.response.send_message(
             "❌ No permission.",
             ephemeral=True
