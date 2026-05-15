@@ -800,7 +800,6 @@ async def setemoji(
 async def serverbattle(
     interaction: discord.Interaction,
     team_name: str,
-    members: str,
     leader: discord.Member,
     co_leader: discord.Member,
     staff1: discord.Member,
@@ -818,10 +817,9 @@ async def serverbattle(
     embed = discord.Embed(
         title=f"⚔️ {team_name} SERVER BATTLE",
         description=(
-            f"👥 Members: {members}\n\n"
-            f"👑 Leader: {leader.mention}\n"
+            f"👑 Leader: {leader.mention}\n\n"
             f"⭐ Co-Leader: {co_leader.mention}\n\n"
-            f"🛡️ Staff 1: {staff1.mention}\n"
+            f"🛡️ Staff 1: {staff1.mention}\n\n"
             f"🛡️ Staff 2: {staff2.mention}"
         ),
         color=discord.Color.red()
@@ -842,6 +840,37 @@ async def serverbattle(
     await interaction.response.send_message(
         "✅ Server battle panel created.",
         ephemeral=True
+    )
+
+@bot.tree.command(name="form")
+async def form(interaction: discord.Interaction):
+
+    if BATTLE_ROLE_ID not in [r.id for r in interaction.user.roles]:
+
+        await interaction.response.send_message(
+            "❌ No permission.",
+            ephemeral=True
+        )
+        return
+
+    embed = discord.Embed(
+        title="📋 SERVER BATTLE FORM",
+        description=(
+            "**Team Name :-**\n\n"
+            "**Leader :-**\n\n"
+            "**Co-Leader :-**\n\n"
+            "**Staff 1 :-**\n\n"
+            "**Staff 2 :-**"
+        ),
+        color=discord.Color.blurple()
+    )
+
+    embed.set_footer(
+        text="Fill The Form Properly"
+    )
+
+    await interaction.response.send_message(
+        embed=embed
     )
 
 class DeleteTicketView(discord.ui.View):
