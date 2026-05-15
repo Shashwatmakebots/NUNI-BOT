@@ -754,6 +754,111 @@ async def plinko(
         embed=embed
     )
 
+VOTE_CHANNEL_ID = 1504801016485249055
+VOTER_ROLE_ID = 1504795014474240080
+VOTE_EMOJI = "<a:fh_colourful_hearts:823766560429572127>"
+
+vote_messages = []
+vote_started = False
+
+@bot.tree.command(name="createvote", description="Create vote panels")
+@app_commands.checks.has_permissions(administrator=True)
+async def createvote(
+    interaction: discord.Interaction,
+    player1: discord.Member,
+    player2: discord.Member = None,
+    player3: discord.Member = None,
+    player4: discord.Member = None
+):
+
+    global vote_messages
+
+    vote_messages = []
+
+    channel = bot.get_channel(VOTE_CHANNEL_ID)
+
+    players = [player1, player2, player3, player4]
+
+    await interaction.response.send_message(
+        "✅ Creating vote panels...",
+        ephemeral=True
+    )
+
+    for player in players:
+
+        if player is None:
+            continue
+
+        embed = discord.Embed(
+            title=f"🌟 Vote For {player.display_name}",
+            description=(
+                f"React with {VOTE_EMOJI} to vote for {player.mention}"
+            ),
+            color=discord.Color.purple()
+        )
+
+        embed.set_thumbnail(url=player.display_avatar.url)
+
+        msg = await channel.send(embed=embed)
+
+        vote_messages.append(msg.id)
+
+@bot.tree.command(name="startvote", description="Start voting")
+@app_commands.checks.has_permissions(administrator=True)
+async def startvote(interaction: discord.Interaction):
+
+    global vote_started
+
+    vote_started = True
+
+    channel = bot.get_channel(VOTE_CHANNEL_ID)
+
+    for message_id in vote_messages:
+
+        try:
+
+            msg = await channel.fetch_message(message_id)
+
+            await msg.add_reaction(VOTE_EMOJI)
+
+        except:
+            pass
+
+    await interaction.response.send_message(
+        "✅ Voting started.",
+        ephemeral=True
+    )
+
+@bot.event
+async def on_raw_reaction_add(payload):
+
+    global vote_started
+
+    if not vote_started:
+        return
+
+    if payload.channel_id != VOTE_CHANNEL_ID:
+        return
+
+    guild = bot.get_guild(payload.guild_id)
+
+    member = guild.get_member(payload.user_id)
+
+    if member.bot:
+        return
+
+    role = guild.get_role(VOTER_ROLE_ID)
+
+    if role:
+        await member.add_roles(role)
+
+    channel = guild.get_channel(VOTE_CHANNEL_ID)
+
+    await channel.set_permissions(
+        member,
+        view_channel=False
+    )
+
 
 
 
