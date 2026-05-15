@@ -754,111 +754,265 @@ async def plinko(
         embed=embed
     )
 
-VOTE_CHANNEL_ID = 1504801016485249055
-VOTER_ROLE_ID = 1504795014474240080
-VOTE_EMOJI = "<a:fh_colourful_hearts:823766560429572127>"
+BATTLE_ROLE_ID = 1504803696213495899
 
-vote_messages = []
-vote_started = False
+SUPPORT_CATEGORY_ID = 1504815315425431552
+REGISTRATION_CATEGORY_ID = 1504815436082970624
+REWARD_CATEGORY_ID = 1504815588709498900
 
-@bot.tree.command(name="createvote", description="Create vote panels")
-@app_commands.checks.has_permissions(administrator=True)
-async def createvote(
+SUPPORT_PING_ROLE = 1504816008349749368
+REGISTRATION_PING_ROLE = 1504803696213495899
+REWARD_PING_ROLE = 1504816008349749368
+
+PANEL_CHANNEL_ID = 1504813235050647613
+
+BATTLE_EMOJI = "💖"
+
+@bot.tree.command(name="setemoji")
+async def setemoji(
     interaction: discord.Interaction,
-    player1: discord.Member,
-    player2: discord.Member = None,
-    player3: discord.Member = None,
-    player4: discord.Member = None
+    emoji: str
 ):
 
-    global vote_messages
+    global BATTLE_EMOJI
 
-    vote_messages = []
+    if BATTLE_ROLE_ID not in [r.id for r in interaction.user.roles]:
+        await interaction.response.send_message(
+            "❌ No permission.",
+            ephemeral=True
+        )
+        return
 
-    channel = bot.get_channel(VOTE_CHANNEL_ID)
-
-    players = [player1, player2, player3, player4]
+    BATTLE_EMOJI = emoji
 
     await interaction.response.send_message(
-        "✅ Creating vote panels...",
+        f"✅ Battle emoji set to {emoji}",
         ephemeral=True
     )
 
-    for player in players:
+@bot.tree.command(name="serverbattle")
+async def serverbattle(
+    interaction: discord.Interaction,
+    members: str,
+    leader: discord.Member,
+    co_leader: discord.Member,
+    staff1: discord.Member,
+    staff2: discord.Member
+):
 
-        if player is None:
-            continue
+    if BATTLE_ROLE_ID not in [r.id for r in interaction.user.roles]:
+        await interaction.response.send_message(
+            "❌ No permission.",
+            ephemeral=True
+        )
+        return
 
-        embed = discord.Embed(
-            title=f"🌟 Vote For {player.display_name}",
-            description=(
-                f"React with {VOTE_EMOJI} to vote for {player.mention}"
+    embed = discord.Embed(
+        title="⚔️ SERVER BATTLE",
+        description=(
+            f"👥 Members: {members}\n\n"
+            f"👑 Leader: {leader.mention}\n"
+            f"⭐ Co-Leader: {co_leader.mention}\n\n"
+            f"🛡️ Staff 1: {staff1.mention}\n"
+            f"🛡️ Staff 2: {staff2.mention}"
+        ),
+        color=discord.Color.red()
+    )
+
+    embed.set_image(
+        url="https://images-ext-1.discordapp.net/external/XM6Rq2OqezDS1x7DYxvBzwDTs2ZsLxzDDxfqadnecRo/%3Fsize%3D2048/https/cdn.discordapp.com/icons/1423469936566730907/a_483a8949102d09f167c7435d0a48b269.gif"
+    )
+
+    msg = await interaction.channel.send(embed=embed)
+
+    await msg.add_reaction(BATTLE_EMOJI)
+
+    await interaction.response.send_message(
+        "✅ Server battle panel created.",
+        ephemeral=True
+    )
+
+class SupportPanel(discord.ui.View):
+
+    def __init__(self):
+        super().__init__(timeout=None)
+
+    @discord.ui.button(
+        label="Contact Support",
+        style=discord.ButtonStyle.blurple,
+        emoji="💖"
+    )
+    async def support_ticket(
+        self,
+        interaction: discord.Interaction,
+        button: discord.ui.Button
+    ):
+
+        guild = interaction.guild
+
+        category = guild.get_channel(SUPPORT_CATEGORY_ID)
+
+        role = guild.get_role(SUPPORT_PING_ROLE)
+
+        overwrites = {
+            guild.default_role: discord.PermissionOverwrite(
+                view_channel=False
             ),
-            color=discord.Color.purple()
+            interaction.user: discord.PermissionOverwrite(
+                view_channel=True,
+                send_messages=True
+            ),
+            role: discord.PermissionOverwrite(
+                view_channel=True,
+                send_messages=True
+            )
+        }
+
+        channel = await guild.create_text_channel(
+            name=f"support-{interaction.user.name}",
+            category=category,
+            overwrites=overwrites
         )
 
-        embed.set_thumbnail(url=player.display_avatar.url)
+        await channel.send(
+            f"{interaction.user.mention} "
+            f"{role.mention}\n\n"
+            f"✅ Staff will reach out to you soon."
+        )
 
-        msg = await channel.send(embed=embed)
+        await interaction.response.send_message(
+            f"✅ Ticket created: {channel.mention}",
+            ephemeral=True
+        )
 
-        vote_messages.append(msg.id)
+    @discord.ui.button(
+        label="Reward Claim",
+        style=discord.ButtonStyle.green,
+        emoji="🎁"
+    )
+    async def reward_ticket(
+        self,
+        interaction: discord.Interaction,
+        button: discord.ui.Button
+    ):
 
-@bot.tree.command(name="startvote", description="Start voting")
-@app_commands.checks.has_permissions(administrator=True)
-async def startvote(interaction: discord.Interaction):
+        guild = interaction.guild
 
-    global vote_started
+        category = guild.get_channel(REWARD_CATEGORY_ID)
 
-    vote_started = True
+        role = guild.get_role(REWARD_PING_ROLE)
 
-    channel = bot.get_channel(VOTE_CHANNEL_ID)
+        overwrites = {
+            guild.default_role: discord.PermissionOverwrite(
+                view_channel=False
+            ),
+            interaction.user: discord.PermissionOverwrite(
+                view_channel=True,
+                send_messages=True
+            ),
+            role: discord.PermissionOverwrite(
+                view_channel=True,
+                send_messages=True
+            )
+        }
 
-    for message_id in vote_messages:
+        channel = await guild.create_text_channel(
+            name=f"reward-{interaction.user.name}",
+            category=category,
+            overwrites=overwrites
+        )
 
-        try:
+        await channel.send(
+            f"{interaction.user.mention} "
+            f"{role.mention}\n\n"
+            f"✅ Staff will reach out to you soon."
+        )
 
-            msg = await channel.fetch_message(message_id)
+        await interaction.response.send_message(
+            f"✅ Ticket created: {channel.mention}",
+            ephemeral=True
+        )
 
-            await msg.add_reaction(VOTE_EMOJI)
+    @discord.ui.button(
+        label="Registration",
+        style=discord.ButtonStyle.red,
+        emoji="📋"
+    )
+    async def registration_ticket(
+        self,
+        interaction: discord.Interaction,
+        button: discord.ui.Button
+    ):
 
-        except:
-            pass
+        guild = interaction.guild
+
+        category = guild.get_channel(REGISTRATION_CATEGORY_ID)
+
+        role = guild.get_role(REGISTRATION_PING_ROLE)
+
+        overwrites = {
+            guild.default_role: discord.PermissionOverwrite(
+                view_channel=False
+            ),
+            interaction.user: discord.PermissionOverwrite(
+                view_channel=True,
+                send_messages=True
+            ),
+            role: discord.PermissionOverwrite(
+                view_channel=True,
+                send_messages=True
+            )
+        }
+
+        channel = await guild.create_text_channel(
+            name=f"registration-{interaction.user.name}",
+            category=category,
+            overwrites=overwrites
+        )
+
+        await channel.send(
+            f"{interaction.user.mention} "
+            f"{role.mention}\n\n"
+            f"✅ Staff will reach out to you soon."
+        )
+
+        await interaction.response.send_message(
+            f"✅ Ticket created: {channel.mention}",
+            ephemeral=True
+        )
+
+@bot.tree.command(name="sendpanel")
+async def sendpanel(interaction: discord.Interaction):
+
+    if BATTLE_ROLE_ID not in [r.id for r in interaction.user.roles]:
+        await interaction.response.send_message(
+            "❌ No permission.",
+            ephemeral=True
+        )
+        return
+
+    channel = bot.get_channel(PANEL_CHANNEL_ID)
+
+    embed = discord.Embed(
+        title="💖 Server Support",
+        description=(
+            "Click a button below to open a ticket.\n\n"
+            "📋 Registration\n"
+            "🎁 Reward Claim\n"
+            "💖 Contact Support"
+        ),
+        color=discord.Color.purple()
+    )
+
+    await channel.send(
+        embed=embed,
+        view=SupportPanel()
+    )
 
     await interaction.response.send_message(
-        "✅ Voting started.",
+        "✅ Support panel sent.",
         ephemeral=True
     )
-
-@bot.event
-async def on_raw_reaction_add(payload):
-
-    global vote_started
-
-    if not vote_started:
-        return
-
-    if payload.channel_id != VOTE_CHANNEL_ID:
-        return
-
-    guild = bot.get_guild(payload.guild_id)
-
-    member = guild.get_member(payload.user_id)
-
-    if member.bot:
-        return
-
-    role = guild.get_role(VOTER_ROLE_ID)
-
-    if role:
-        await member.add_roles(role)
-
-    channel = guild.get_channel(VOTE_CHANNEL_ID)
-
-    await channel.set_permissions(
-        member,
-        view_channel=False
-    )
-
 
 
 
