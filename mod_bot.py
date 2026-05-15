@@ -799,6 +799,7 @@ async def setemoji(
 @bot.tree.command(name="serverbattle")
 async def serverbattle(
     interaction: discord.Interaction,
+    team_name: str,
     members: str,
     leader: discord.Member,
     co_leader: discord.Member,
@@ -815,7 +816,7 @@ async def serverbattle(
         return
 
     embed = discord.Embed(
-        title="⚔️ SERVER BATTLE",
+        title=f"⚔️ {team_name} SERVER BATTLE",
         description=(
             f"👥 Members: {members}\n\n"
             f"👑 Leader: {leader.mention}\n"
@@ -827,7 +828,11 @@ async def serverbattle(
     )
 
     embed.set_image(
-        url="https://images-ext-1.discordapp.net/external/XM6Rq2OqezDS1x7DYxvBzwDTs2ZsLxzDDxfqadnecRo/%3Fsize%3D2048/https/cdn.discordapp.com/icons/1423469936566730907/a_483a8949102d09f167c7435d0a48b269.gif"
+        url="https://images-ext-1.discordapp.net/external/XM6Rq2OqezDS1x7DYxvBzwDTs2ZsLxzDDxfqadnecRo/%3Fsize%3D2048/https/cdn.discordapp.com/icons/1423469936566730907/a_483a8949102d09f167c7435d0a48b269.gif?width=288&height=288"
+    )
+
+    embed.set_footer(
+        text="⚔️ Prepare For Battle ⚔️"
     )
 
     msg = await interaction.channel.send(embed=embed)
