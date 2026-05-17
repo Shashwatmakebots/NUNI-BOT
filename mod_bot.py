@@ -763,7 +763,7 @@ REGISTRATION_CATEGORY_ID = 1504815436082970624
 REWARD_CATEGORY_ID = 1504815588709498900
 
 SUPPORT_PING_ROLE = 1504816008349749368
-REGISTRATION_PING_ROLE = 1504803696213495899
+REGISTRATION_PING_ROLE = 1505504246894956604
 REWARD_PING_ROLE = 1504816008349749368
 
 PANEL_CHANNEL_ID = 1504813235050647613
@@ -1252,6 +1252,16 @@ async def sendpanel(interaction: discord.Interaction):
         "✅ Support panel sent.",
         ephemeral=True
     )
+
+@bot.event
+async def on_ready():
+    try:
+        synced = await bot.tree.sync()
+        print(f"Synced {len(synced)} command(s)")
+    except Exception as e:
+        print(e)
+
+    print(f"Logged in as {bot.user}")
 
 
 
