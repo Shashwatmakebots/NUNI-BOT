@@ -756,28 +756,14 @@ async def plinko(
     )
 
 
-BATTLE_ROLE_ID = 1505504246894956604
-
-SUPPORT_CATEGORY_ID = 1504815315425431552
-REGISTRATION_CATEGORY_ID = 1504815436082970624
-REWARD_CATEGORY_ID = 1504815588709498900
-
-SUPPORT_PING_ROLE = 1504816008349749368
-REGISTRATION_PING_ROLE = 1505504246894956604
-REWARD_PING_ROLE = 1504816008349749368
-
-PANEL_CHANNEL_ID = 1504813235050647613
-
-BATTLE_EMOJI = "💖"
-
-vote_messages = []
-vote_started = False
-
-
-@bot.tree.command(name="setemoji")
-async def setemoji(
+@bot.tree.command(name="mayorbattle")
+async def mayorbattle(
     interaction: discord.Interaction,
-    emoji: str
+    leader: discord.Member,
+    staff1: discord.Member,
+    staff2: discord.Member,
+    staff3: discord.Member,
+    number: str
 ):
 
     allowed_role = 1505504246894956604
@@ -789,12 +775,32 @@ async def setemoji(
         )
         return
 
-    global BATTLE_EMOJI
+    embed = discord.Embed(
+        title="👑 MAYOR BATTLE REGISTRATION",
+        description=(
+            f"👑 **Leader:** {leader.mention}\n\n"
+            f"🛡️ **Staff 1:** {staff1.mention}\n\n"
+            f"🛡️ **Staff 2:** {staff2.mention}\n\n"
+            f"🛡️ **Staff 3:** {staff3.mention}\n\n"
+            f"📞 **Number:** `{number}`"
+        ),
+        color=discord.Color.gold()
+    )
 
-    BATTLE_EMOJI = emoji
+    embed.set_image(
+        url="https://images-ext-1.discordapp.net/external/XM6Rq2OqezDS1x7DYxvBzwDTs2ZsLxzDDxfqadnecRo/%3Fsize%3D2048/https/cdn.discordapp.com/icons/1423469936566730907/a_483a8949102d09f167c7435d0a48b269.gif?width=288&height=288"
+    )
+
+    embed.set_footer(
+        text="👑 Prepare For Mayor Battle 👑"
+    )
+
+    msg = await interaction.channel.send(embed=embed)
+
+    await msg.add_reaction(BATTLE_EMOJI)
 
     await interaction.response.send_message(
-        f"✅ Emoji changed to {emoji}",
+        "✅ Mayor battle panel created.",
         ephemeral=True
     )
 
