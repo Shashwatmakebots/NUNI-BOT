@@ -805,31 +805,6 @@ async def mayorbattle(
     )
         return
 
-    embed = discord.Embed(
-        title="👑 MAYOR BATTLE REGISTRATION",
-        description=(
-            f"👑 **Leader:** {leader.mention}\n\n"
-            f"🛡️ **Staff 1:** {staff1.mention}\n\n"
-            f"🛡️ **Staff 2:** {staff2.mention}\n\n"
-            f"🛡️ **Staff 3:** {staff3.mention}\n\n"
-            f"📞 **Number:** `{number}`"
-        ),
-        color=discord.Color.gold()
-    )
-
-    embed.set_footer(
-        text="👑 Prepare For Mayor Battle 👑"
-    )
-
-    msg = await interaction.channel.send(embed=embed)
-
-    await msg.add_reaction(BATTLE_EMOJI)
-
-    await interaction.response.send_message(
-        "✅ Mayor battle panel created.",
-        ephemeral=True
-    )
-
 
 @bot.tree.command(name="form")
 async def form(interaction: discord.Interaction):
