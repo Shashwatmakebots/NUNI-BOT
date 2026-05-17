@@ -803,7 +803,6 @@ async def mayorbattle(
         "✅ Mayor battle panel created.",
         ephemeral=True
     )
-   
         return
 
     embed = discord.Embed(
