@@ -773,6 +773,7 @@ BATTLE_EMOJI = "💖"
 vote_messages = []
 vote_started = False
 
+
 @bot.tree.command(name="setemoji")
 async def setemoji(
     interaction: discord.Interaction,
@@ -796,14 +797,15 @@ async def setemoji(
         ephemeral=True
     )
 
-@bot.tree.command(name="serverbattle")
-async def serverbattle(
+
+@bot.tree.command(name="mayorbattle")
+async def mayorbattle(
     interaction: discord.Interaction,
-    team_name: str,
     leader: discord.Member,
-    co_leader: discord.Member,
     staff1: discord.Member,
-    staff2: discord.Member
+    staff2: discord.Member,
+    staff3: discord.Member,
+    number: str
 ):
 
     if BATTLE_ROLE_ID not in [r.id for r in interaction.user.roles]:
@@ -815,14 +817,15 @@ async def serverbattle(
         return
 
     embed = discord.Embed(
-        title=f"⚔️ {team_name} SERVER BATTLE",
+        title="👑 MAYOR BATTLE REGISTRATION",
         description=(
-            f"👑 Leader: {leader.mention}\n\n"
-            f"⭐ Co-Leader: {co_leader.mention}\n\n"
-            f"🛡️ Staff 1: {staff1.mention}\n\n"
-            f"🛡️ Staff 2: {staff2.mention}"
+            f"👑 **Leader:** {leader.mention}\n\n"
+            f"🛡️ **Staff 1:** {staff1.mention}\n\n"
+            f"🛡️ **Staff 2:** {staff2.mention}\n\n"
+            f"🛡️ **Staff 3:** {staff3.mention}\n\n"
+            f"📞 **Number:** `{number}`"
         ),
-        color=discord.Color.red()
+        color=discord.Color.gold()
     )
 
     embed.set_image(
@@ -830,7 +833,7 @@ async def serverbattle(
     )
 
     embed.set_footer(
-        text="⚔️ Prepare For Battle ⚔️"
+        text="👑 Prepare For Mayor Battle 👑"
     )
 
     msg = await interaction.channel.send(embed=embed)
@@ -838,9 +841,10 @@ async def serverbattle(
     await msg.add_reaction(BATTLE_EMOJI)
 
     await interaction.response.send_message(
-        "✅ Server battle panel created.",
+        "✅ Mayor battle panel created.",
         ephemeral=True
     )
+
 
 @bot.tree.command(name="form")
 async def form(interaction: discord.Interaction):
@@ -854,15 +858,15 @@ async def form(interaction: discord.Interaction):
         return
 
     embed = discord.Embed(
-        title="📋 SERVER BATTLE FORM",
+        title="📋 MAYOR BATTLE FORM",
         description=(
-            "**Team Name :-**\n\n"
             "**Leader :-**\n\n"
-            "**Co-Leader :-**\n\n"
             "**Staff 1 :-**\n\n"
-            "**Staff 2 :-**"
+            "**Staff 2 :-**\n\n"
+            "**Staff 3 :-**\n\n"
+            "**Number :-**"
         ),
-        color=discord.Color.blurple()
+        color=discord.Color.gold()
     )
 
     embed.set_footer(
@@ -872,6 +876,7 @@ async def form(interaction: discord.Interaction):
     await interaction.response.send_message(
         embed=embed
     )
+
 
 class DeleteTicketView(discord.ui.View):
 
@@ -910,6 +915,7 @@ class DeleteTicketView(discord.ui.View):
 
         await interaction.channel.delete()
 
+
 class TicketControls(discord.ui.View):
 
     def __init__(self):
@@ -931,7 +937,7 @@ class TicketControls(discord.ui.View):
             id=SUPPORT_PING_ROLE
         )
 
-        if support_role not in interaction.user.roles:
+        if support_role not in interaction.user.roles]:
 
             await interaction.response.send_message(
                 "❌ No permission.",
@@ -1018,7 +1024,7 @@ class TicketControls(discord.ui.View):
             id=SUPPORT_PING_ROLE
         )
 
-        if support_role not in interaction.user.roles:
+        if support_role not in interaction.user.roles]:
 
             await interaction.response.send_message(
                 "❌ No permission.",
@@ -1058,6 +1064,7 @@ class TicketControls(discord.ui.View):
             embed=close_embed,
             view=DeleteTicketView()
         )
+
 
 class SupportPanel(discord.ui.View):
 
@@ -1210,6 +1217,7 @@ class SupportPanel(discord.ui.View):
             f"✅ Ticket created: {channel.mention}",
             ephemeral=True
         )
+
 
 @bot.tree.command(name="sendpanel")
 async def sendpanel(interaction: discord.Interaction):
