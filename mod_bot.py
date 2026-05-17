@@ -841,7 +841,6 @@ async def form(interaction: discord.Interaction):
             "❌ No permission.",
             ephemeral=True
         )
-        return
 
     embed = discord.Embed(
         title="📋 MAYOR BATTLE FORM",
