@@ -937,7 +937,7 @@ class TicketControls(discord.ui.View):
             id=SUPPORT_PING_ROLE
         )
 
-        if support_role not in interaction.user.roles]:
+        if support_role not in interaction.user.roles:
 
             await interaction.response.send_message(
                 "❌ No permission.",
