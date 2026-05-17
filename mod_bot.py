@@ -755,6 +755,48 @@ async def plinko(
         embed=embed
     )
 
+BATTLE_ROLE_ID = 1505504246894956604
+
+SUPPORT_CATEGORY_ID = 1504815315425431552
+REGISTRATION_CATEGORY_ID = 1504815436082970624
+REWARD_CATEGORY_ID = 1504815588709498900
+
+SUPPORT_PING_ROLE = 1504816008349749368
+REGISTRATION_PING_ROLE = 1505504246894956604
+REWARD_PING_ROLE = 1504816008349749368
+
+PANEL_CHANNEL_ID = 1504813235050647613
+
+BATTLE_EMOJI = "💖"
+
+vote_messages = []
+vote_started = False
+
+
+@bot.tree.command(name="setemoji")
+async def setemoji(
+    interaction: discord.Interaction,
+    emoji: str
+):
+
+    allowed_role = 1505504246894956604
+
+    if allowed_role not in [role.id for role in interaction.user.roles]:
+        await interaction.response.send_message(
+            "❌ No permission.",
+            ephemeral=True
+        )
+        return
+
+    global BATTLE_EMOJI
+
+    BATTLE_EMOJI = emoji
+
+    await interaction.response.send_message(
+        f"✅ Emoji changed to {emoji}",
+        ephemeral=True
+    )
+
 
 @bot.tree.command(name="mayorbattle")
 async def mayorbattle(
@@ -815,6 +857,7 @@ async def form(interaction: discord.Interaction):
             "❌ No permission.",
             ephemeral=True
         )
+        return
 
     embed = discord.Embed(
         title="📋 MAYOR BATTLE FORM",
@@ -1038,20 +1081,6 @@ class SupportPanel(discord.ui.View):
         category = guild.get_channel(SUPPORT_CATEGORY_ID)
         role = guild.get_role(SUPPORT_PING_ROLE)
 
-        if category is None:
-            await interaction.response.send_message(
-                "❌ Support category not found.",
-                ephemeral=True
-            )
-            return
-
-        if role is None:
-            await interaction.response.send_message(
-                "❌ Support role not found.",
-                ephemeral=True
-            )
-            return
-
         overwrites = {
             guild.default_role: discord.PermissionOverwrite(
                 view_channel=False
@@ -1099,20 +1128,6 @@ class SupportPanel(discord.ui.View):
         category = guild.get_channel(REWARD_CATEGORY_ID)
         role = guild.get_role(REWARD_PING_ROLE)
 
-        if category is None:
-            await interaction.response.send_message(
-                "❌ Reward category not found.",
-                ephemeral=True
-            )
-            return
-
-        if role is None:
-            await interaction.response.send_message(
-                "❌ Reward role not found.",
-                ephemeral=True
-            )
-            return
-
         overwrites = {
             guild.default_role: discord.PermissionOverwrite(
                 view_channel=False
@@ -1159,20 +1174,6 @@ class SupportPanel(discord.ui.View):
 
         category = guild.get_channel(REGISTRATION_CATEGORY_ID)
         role = guild.get_role(REGISTRATION_PING_ROLE)
-
-        if category is None:
-            await interaction.response.send_message(
-                "❌ Registration category not found.",
-                ephemeral=True
-            )
-            return
-
-        if role is None:
-            await interaction.response.send_message(
-                "❌ Registration role not found.",
-                ephemeral=True
-            )
-            return
 
         overwrites = {
             guild.default_role: discord.PermissionOverwrite(
@@ -1239,6 +1240,7 @@ async def sendpanel(interaction: discord.Interaction):
         "✅ Support panel sent.",
         ephemeral=True
     )
+
 
 @bot.event
 async def on_ready():
