@@ -780,7 +780,14 @@ async def setemoji(
     emoji: str
 ):
 
-    if BATTLE_ROLE_ID not in [r.id for r in interaction.user.roles]:
+    allowed_role = 1505504246894956604
+
+if allowed_role not in [role.id for role in interaction.user.roles]:
+    await interaction.response.send_message(
+        "❌ No permission.",
+        ephemeral=True
+    )
+    return
 
         await interaction.response.send_message(
             "❌ No permission.",
