@@ -756,7 +756,7 @@ async def plinko(
     )
 
 
-BATTLE_ROLE_ID = 1504803696213495899
+BATTLE_ROLE_ID = 1505504246894956604
 
 SUPPORT_CATEGORY_ID = 1504815315425431552
 REGISTRATION_CATEGORY_ID = 1504815436082970624
@@ -782,13 +782,7 @@ async def setemoji(
 
     allowed_role = 1505504246894956604
 
-if allowed_role not in [role.id for role in interaction.user.roles]:
-    await interaction.response.send_message(
-        "❌ No permission.",
-        ephemeral=True
-    )
-    return
-
+    if allowed_role not in [role.id for role in interaction.user.roles]:
         await interaction.response.send_message(
             "❌ No permission.",
             ephemeral=True
@@ -815,8 +809,9 @@ async def mayorbattle(
     number: str
 ):
 
-    if BATTLE_ROLE_ID not in [r.id for r in interaction.user.roles]:
+    allowed_role = 1505504246894956604
 
+    if allowed_role not in [role.id for role in interaction.user.roles]:
         await interaction.response.send_message(
             "❌ No permission.",
             ephemeral=True
@@ -833,10 +828,6 @@ async def mayorbattle(
             f"📞 **Number:** `{number}`"
         ),
         color=discord.Color.gold()
-    )
-
-    embed.set_image(
-        url="https://images-ext-1.discordapp.net/external/XM6Rq2OqezDS1x7DYxvBzwDTs2ZsLxzDDxfqadnecRo/%3Fsize%3D2048/https/cdn.discordapp.com/icons/1423469936566730907/a_483a8949102d09f167c7435d0a48b269.gif?width=288&height=288"
     )
 
     embed.set_footer(
@@ -856,8 +847,9 @@ async def mayorbattle(
 @bot.tree.command(name="form")
 async def form(interaction: discord.Interaction):
 
-    if BATTLE_ROLE_ID not in [r.id for r in interaction.user.roles]:
+    allowed_role = 1505504246894956604
 
+    if allowed_role not in [role.id for role in interaction.user.roles]:
         await interaction.response.send_message(
             "❌ No permission.",
             ephemeral=True
@@ -907,7 +899,6 @@ class DeleteTicketView(discord.ui.View):
         )
 
         if support_role not in interaction.user.roles:
-
             await interaction.response.send_message(
                 "❌ No permission.",
                 ephemeral=True
@@ -945,7 +936,6 @@ class TicketControls(discord.ui.View):
         )
 
         if support_role not in interaction.user.roles:
-
             await interaction.response.send_message(
                 "❌ No permission.",
                 ephemeral=True
@@ -954,9 +944,7 @@ class TicketControls(discord.ui.View):
 
         embed = discord.Embed(
             title="✅ Ticket Claimed",
-            description=(
-                f"{interaction.user.mention} claimed this ticket."
-            ),
+            description=f"{interaction.user.mention} claimed this ticket.",
             color=discord.Color.green()
         )
 
@@ -984,10 +972,7 @@ class TicketControls(discord.ui.View):
             limit=None,
             oldest_first=True
         ):
-
-            messages.append(
-                f"{msg.author}: {msg.content}"
-            )
+            messages.append(f"{msg.author}: {msg.content}")
 
         transcript = "\n".join(messages)
 
@@ -1032,7 +1017,6 @@ class TicketControls(discord.ui.View):
         )
 
         if support_role not in interaction.user.roles:
-
             await interaction.response.send_message(
                 "❌ No permission.",
                 ephemeral=True
@@ -1092,8 +1076,21 @@ class SupportPanel(discord.ui.View):
         guild = interaction.guild
 
         category = guild.get_channel(SUPPORT_CATEGORY_ID)
-
         role = guild.get_role(SUPPORT_PING_ROLE)
+
+        if category is None:
+            await interaction.response.send_message(
+                "❌ Support category not found.",
+                ephemeral=True
+            )
+            return
+
+        if role is None:
+            await interaction.response.send_message(
+                "❌ Support role not found.",
+                ephemeral=True
+            )
+            return
 
         overwrites = {
             guild.default_role: discord.PermissionOverwrite(
@@ -1116,9 +1113,7 @@ class SupportPanel(discord.ui.View):
         )
 
         await channel.send(
-            f"{interaction.user.mention} "
-            f"{role.mention}\n\n"
-            f"✅ Staff will reach out to you soon.",
+            f"{interaction.user.mention} {role.mention}\n\n✅ Staff will reach out to you soon.",
             view=TicketControls()
         )
 
@@ -1126,6 +1121,7 @@ class SupportPanel(discord.ui.View):
             f"✅ Ticket created: {channel.mention}",
             ephemeral=True
         )
+
 
     @discord.ui.button(
         label="Reward Claim",
@@ -1141,8 +1137,21 @@ class SupportPanel(discord.ui.View):
         guild = interaction.guild
 
         category = guild.get_channel(REWARD_CATEGORY_ID)
-
         role = guild.get_role(REWARD_PING_ROLE)
+
+        if category is None:
+            await interaction.response.send_message(
+                "❌ Reward category not found.",
+                ephemeral=True
+            )
+            return
+
+        if role is None:
+            await interaction.response.send_message(
+                "❌ Reward role not found.",
+                ephemeral=True
+            )
+            return
 
         overwrites = {
             guild.default_role: discord.PermissionOverwrite(
@@ -1165,9 +1174,7 @@ class SupportPanel(discord.ui.View):
         )
 
         await channel.send(
-            f"{interaction.user.mention} "
-            f"{role.mention}\n\n"
-            f"✅ Staff will reach out to you soon.",
+            f"{interaction.user.mention} {role.mention}\n\n✅ Staff will reach out to you soon.",
             view=TicketControls()
         )
 
@@ -1175,6 +1182,7 @@ class SupportPanel(discord.ui.View):
             f"✅ Ticket created: {channel.mention}",
             ephemeral=True
         )
+
 
     @discord.ui.button(
         label="Registration",
@@ -1190,8 +1198,21 @@ class SupportPanel(discord.ui.View):
         guild = interaction.guild
 
         category = guild.get_channel(REGISTRATION_CATEGORY_ID)
-
         role = guild.get_role(REGISTRATION_PING_ROLE)
+
+        if category is None:
+            await interaction.response.send_message(
+                "❌ Registration category not found.",
+                ephemeral=True
+            )
+            return
+
+        if role is None:
+            await interaction.response.send_message(
+                "❌ Registration role not found.",
+                ephemeral=True
+            )
+            return
 
         overwrites = {
             guild.default_role: discord.PermissionOverwrite(
@@ -1214,9 +1235,7 @@ class SupportPanel(discord.ui.View):
         )
 
         await channel.send(
-            f"{interaction.user.mention} "
-            f"{role.mention}\n\n"
-            f"✅ Staff will reach out to you soon.",
+            f"{interaction.user.mention} {role.mention}\n\n✅ Staff will reach out to you soon.",
             view=TicketControls()
         )
 
@@ -1229,8 +1248,9 @@ class SupportPanel(discord.ui.View):
 @bot.tree.command(name="sendpanel")
 async def sendpanel(interaction: discord.Interaction):
 
-    if BATTLE_ROLE_ID not in [r.id for r in interaction.user.roles]:
+    allowed_role = 1505504246894956604
 
+    if allowed_role not in [role.id for role in interaction.user.roles]:
         await interaction.response.send_message(
             "❌ No permission.",
             ephemeral=True
