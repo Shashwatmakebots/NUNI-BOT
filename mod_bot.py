@@ -1241,6 +1241,397 @@ async def sendpanel(interaction: discord.Interaction):
         ephemeral=True
     )
 
+# ==============================
+# DISCORD STATS SYSTEM
+# Prefix: ,
+# Commands:
+# ,stats @user
+# ,s,t
+# ,s,v
+# ,leaderboard msg
+# ,leaderboard voice
+# ,dailyleaderboard msg
+# ,dailyleaderboard voice
+# ==============================
+
+# INSTALL:
+# pip install pillow aiosqlite
+
+import discord
+from discord.ext import commands, tasks
+from PIL import Image, ImageDraw, ImageFont
+import aiosqlite
+from datetime import datetime
+import os
+
+# ==============================
+# ADD TO YOUR BOT FILE
+# ==============================
+
+DB = "stats.db"
+
+voice_times = {}
+
+# ==============================
+# DATABASE SETUP
+# ==============================
+
+async def setup_stats_db():
+    async with aiosqlite.connect(DB) as db:
+        await db.execute("""
+        CREATE TABLE IF NOT EXISTS user_stats (
+            user_id INTEGER PRIMARY KEY,
+            messages INTEGER DEFAULT 0,
+            daily_messages INTEGER DEFAULT 0,
+            voice_seconds INTEGER DEFAULT 0,
+            daily_voice_seconds INTEGER DEFAULT 0
+        )
+        """)
+        await db.commit()
+
+async def ensure_user(user_id):
+    async with aiosqlite.connect(DB) as db:
+        await db.execute("""
+        INSERT OR IGNORE INTO user_stats(user_id)
+        VALUES(?)
+        """, (user_id,))
+        await db.commit()
+
+# ==============================
+# TRACK MESSAGES
+# ==============================
+
+@bot.event
+async def on_message(message):
+
+    if message.author.bot:
+        return
+
+    await ensure_user(message.author.id)
+
+    async with aiosqlite.connect(DB) as db:
+        await db.execute("""
+        UPDATE user_stats
+        SET messages = messages + 1,
+            daily_messages = daily_messages + 1
+        WHERE user_id = ?
+        """, (message.author.id,))
+        await db.commit()
+
+    await bot.process_commands(message)
+
+# ==============================
+# TRACK VOICE TIME
+# ==============================
+
+@bot.event
+async def on_voice_state_update(member, before, after):
+
+    # JOINED VC
+    if before.channel is None and after.channel is not None:
+        voice_times[member.id] = datetime.utcnow()
+
+    # LEFT VC
+    elif before.channel is not None and after.channel is None:
+
+        if member.id in voice_times:
+
+            join_time = voice_times.pop(member.id)
+
+            total_seconds = int(
+                (datetime.utcnow() - join_time).total_seconds()
+            )
+
+            await ensure_user(member.id)
+
+            async with aiosqlite.connect(DB) as db:
+                await db.execute("""
+                UPDATE user_stats
+                SET voice_seconds = voice_seconds + ?,
+                    daily_voice_seconds = daily_voice_seconds + ?
+                WHERE user_id = ?
+                """, (
+                    total_seconds,
+                    total_seconds,
+                    member.id
+                ))
+                await db.commit()
+
+# ==============================
+# DAILY RESET
+# ==============================
+
+@tasks.loop(hours=24)
+async def reset_daily_stats():
+
+    async with aiosqlite.connect(DB) as db:
+        await db.execute("""
+        UPDATE user_stats
+        SET daily_messages = 0,
+            daily_voice_seconds = 0
+        """)
+        await db.commit()
+
+# ==============================
+# CREATE STATS IMAGE
+# ==============================
+
+async def create_stats_image(member, messages, voice_seconds):
+
+    width = 900
+    height = 350
+
+    img = Image.new("RGB", (width, height), (20, 20, 30))
+    draw = ImageDraw.Draw(img)
+
+    font_big = ImageFont.load_default()
+    font_small = ImageFont.load_default()
+
+    # Avatar
+    avatar_path = f"{member.id}.png"
+
+    avatar_asset = member.display_avatar.with_size(256)
+    await avatar_asset.save(avatar_path)
+
+    avatar = Image.open(avatar_path).resize((150, 150))
+
+    img.paste(avatar, (40, 80))
+
+    # Username
+    draw.text(
+        (240, 50),
+        f"{member.name}",
+        fill="white",
+        font=font_big
+    )
+
+    # Message Box
+    draw.rectangle((240, 120, 500, 220), fill=(40, 40, 50))
+
+    draw.text(
+        (270, 150),
+        f"Messages: {messages}",
+        fill="white",
+        font=font_small
+    )
+
+    # Voice Box
+    hours = round(voice_seconds / 3600, 2)
+
+    draw.rectangle((550, 120, 810, 220), fill=(40, 40, 50))
+
+    draw.text(
+        (580, 150),
+        f"Voice: {hours} Hours",
+        fill="white",
+        font=font_small
+    )
+
+    output = f"stats_{member.id}.png"
+
+    img.save(output)
+
+    os.remove(avatar_path)
+
+    return output
+
+# ==============================
+# ,stats
+# ==============================
+
+@bot.command()
+async def stats(ctx, member: discord.Member = None):
+
+    member = member or ctx.author
+
+    await ensure_user(member.id)
+
+    async with aiosqlite.connect(DB) as db:
+
+        cursor = await db.execute("""
+        SELECT messages, voice_seconds
+        FROM user_stats
+        WHERE user_id = ?
+        """, (member.id,))
+
+        data = await cursor.fetchone()
+
+    messages = data[0]
+    voice = data[1]
+
+    image = await create_stats_image(
+        member,
+        messages,
+        voice
+    )
+
+    await ctx.send(file=discord.File(image))
+
+    os.remove(image)
+
+# ==============================
+# ,s,t (TEXT STATS)
+# ==============================
+
+@bot.command(name="s,t")
+async def text_stats(ctx):
+
+    await ensure_user(ctx.author.id)
+
+    async with aiosqlite.connect(DB) as db:
+
+        cursor = await db.execute("""
+        SELECT messages
+        FROM user_stats
+        WHERE user_id = ?
+        """, (ctx.author.id,))
+
+        data = await cursor.fetchone()
+
+    await ctx.send(
+        f"📨 {ctx.author.mention} Total Messages: **{data[0]}**"
+    )
+
+# ==============================
+# ,s,v (VOICE STATS)
+# ==============================
+
+@bot.command(name="s,v")
+async def voice_stats(ctx):
+
+    await ensure_user(ctx.author.id)
+
+    async with aiosqlite.connect(DB) as db:
+
+        cursor = await db.execute("""
+        SELECT voice_seconds
+        FROM user_stats
+        WHERE user_id = ?
+        """, (ctx.author.id,))
+
+        data = await cursor.fetchone()
+
+    hours = round(data[0] / 3600, 2)
+
+    await ctx.send(
+        f"🎤 {ctx.author.mention} Voice Time: **{hours} Hours**"
+    )
+
+# ==============================
+# ,leaderboard msg
+# ,leaderboard voice
+# ==============================
+
+@bot.command()
+async def leaderboard(ctx, category=None):
+
+    if category not in ["msg", "voice"]:
+        return await ctx.send(
+            "Use:\n`,leaderboard msg`\n`,leaderboard voice`"
+        )
+
+    async with aiosqlite.connect(DB) as db:
+
+        if category == "msg":
+
+            cursor = await db.execute("""
+            SELECT user_id, messages
+            FROM user_stats
+            ORDER BY messages DESC
+            LIMIT 10
+            """)
+
+            data = await cursor.fetchall()
+
+            text = "**🏆 Message Leaderboard**\n\n"
+
+            for i, row in enumerate(data, start=1):
+
+                user = await bot.fetch_user(row[0])
+
+                text += f"{i}. {user.name} — {row[1]} msgs\n"
+
+        else:
+
+            cursor = await db.execute("""
+            SELECT user_id, voice_seconds
+            FROM user_stats
+            ORDER BY voice_seconds DESC
+            LIMIT 10
+            """)
+
+            data = await cursor.fetchall()
+
+            text = "**🎤 Voice Leaderboard**\n\n"
+
+            for i, row in enumerate(data, start=1):
+
+                user = await bot.fetch_user(row[0])
+
+                hours = round(row[1] / 3600, 2)
+
+                text += f"{i}. {user.name} — {hours}h\n"
+
+    await ctx.send(text)
+
+# ==============================
+# ,dailyleaderboard msg
+# ,dailyleaderboard voice
+# ==============================
+
+@bot.command()
+async def dailyleaderboard(ctx, category=None):
+
+    if category not in ["msg", "voice"]:
+        return await ctx.send(
+            "Use:\n`,dailyleaderboard msg`\n`,dailyleaderboard voice`"
+        )
+
+    async with aiosqlite.connect(DB) as db:
+
+        if category == "msg":
+
+            cursor = await db.execute("""
+            SELECT user_id, daily_messages
+            FROM user_stats
+            ORDER BY daily_messages DESC
+            LIMIT 10
+            """)
+
+            data = await cursor.fetchall()
+
+            text = "**📅 Daily Message Leaderboard**\n\n"
+
+            for i, row in enumerate(data, start=1):
+
+                user = await bot.fetch_user(row[0])
+
+                text += f"{i}. {user.name} — {row[1]} msgs\n"
+
+        else:
+
+            cursor = await db.execute("""
+            SELECT user_id, daily_voice_seconds
+            FROM user_stats
+            ORDER BY daily_voice_seconds DESC
+            LIMIT 10
+            """)
+
+            data = await cursor.fetchall()
+
+            text = "**📅 Daily Voice Leaderboard**\n\n"
+
+            for i, row in enumerate(data, start=1):
+
+                user = await bot.fetch_user(row[0])
+
+                hours = round(row[1] / 3600, 2)
+
+                text += f"{i}. {user.name} — {hours}h\n"
+
+    await ctx.send(text)
+
+
 
 @bot.event
 async def on_ready():
@@ -1251,6 +1642,10 @@ async def on_ready():
         print(e)
 
     print(f"Logged in as {bot.user}")
+
+    await setup_stats_db()
+
+    reset_daily_stats.start()
 
 
 
