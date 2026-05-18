@@ -1307,16 +1307,23 @@ async def on_message(message):
     if message.author.bot:
         return
 
-    await ensure_user(message.author.id)
+    try:
 
-    async with aiosqlite.connect(DB) as db:
-        await db.execute("""
-        UPDATE user_stats
-        SET messages = messages + 1,
-            daily_messages = daily_messages + 1
-        WHERE user_id = ?
-        """, (message.author.id,))
-        await db.commit()
+        await ensure_user(message.author.id)
+
+        async with aiosqlite.connect(DB) as db:
+
+            await db.execute("""
+            UPDATE user_stats
+            SET messages = messages + 1,
+                daily_messages = daily_messages + 1
+            WHERE user_id = ?
+            """, (message.author.id,))
+
+            await db.commit()
+
+    except Exception as e:
+        print(e)
 
     await bot.process_commands(message)
 
