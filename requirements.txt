@@ -2,3 +2,5 @@ discord.py
 yt-dlp
 discord.py[voice]
 yt-dlp
+pillow
+aiosqlite
