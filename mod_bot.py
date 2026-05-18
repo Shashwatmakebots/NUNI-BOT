@@ -1638,6 +1638,25 @@ async def dailyleaderboard(ctx, category=None):
 
     await ctx.send(text)
 
+@bot.command()
+async def fixdb(ctx):
+
+    async with aiosqlite.connect(DB) as db:
+
+        await db.execute("""
+        CREATE TABLE IF NOT EXISTS user_stats (
+            user_id INTEGER PRIMARY KEY,
+            messages INTEGER DEFAULT 0,
+            daily_messages INTEGER DEFAULT 0,
+            voice_seconds INTEGER DEFAULT 0,
+            daily_voice_seconds INTEGER DEFAULT 0
+        )
+        """)
+
+        await db.commit()
+
+    await ctx.send("Database fixed.")
+
 
 
 @bot.event
