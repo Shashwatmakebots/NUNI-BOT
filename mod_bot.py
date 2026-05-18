@@ -1635,17 +1635,22 @@ async def dailyleaderboard(ctx, category=None):
 
 @bot.event
 async def on_ready():
+
     try:
         synced = await bot.tree.sync()
         print(f"Synced {len(synced)} command(s)")
+
     except Exception as e:
         print(e)
 
-    print(f"Logged in as {bot.user}")
-
+    # CREATE DATABASE
     await setup_stats_db()
 
-    reset_daily_stats.start()
+    # START DAILY RESET
+    if not reset_daily_stats.is_running():
+        reset_daily_stats.start()
+
+    print(f"Logged in as {bot.user}")
 
 
 
