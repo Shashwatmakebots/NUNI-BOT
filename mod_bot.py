@@ -1778,7 +1778,42 @@ async def on_message(message):
 
 @bot.event
 async def on_ready():
-    await bot.tree.sync()
+
     print(f"Logged in as {bot.user}")
+
+    try:
+
+        node = wavelink.Node(
+            uri="http://my-lavalink-m9vr.onrender.com",
+            password="mypassword"
+        )
+
+        await wavelink.Pool.connect(
+            client=bot,
+            nodes=[node]
+        )
+
+        print("✅ Lavalink Connected")
+
+    except Exception as e:
+
+        print(f"Lavalink Error: {e}")
+
+    try:
+
+        synced = await bot.tree.sync()
+
+        print(f"Synced {len(synced)} commands")
+
+    except Exception as e:
+
+        print(e)
+
+    await setup_stats_db()
+
+    if not reset_daily_stats.is_running():
+        reset_daily_stats.start()
+
+    print("✅ Bot Fully Ready")
 
 bot.run(os.getenv("TOKEN"))
