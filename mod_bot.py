@@ -15,8 +15,6 @@ intents = discord.Intents.all()
 bot = commands.Bot(command_prefix=",", intents=intents)
 tree = bot.tree
 
-music_queue = deque()
-current_song = None
 
 def load_credits():
     try:
