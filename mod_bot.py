@@ -100,28 +100,47 @@ class RocketView(discord.ui.View):
 
 import wavelink
 
-# Lavalink Node
 @bot.event
 async def on_ready():
 
-    node = wavelink.Node(
-        uri="http://my-lavalink-m9vr.onrender.com:80",
-        password="mypassword"
-    )
-
-    await wavelink.Pool.connect(
-        nodes=[node],
-        client=bot
-    )
+    print(f"Logged in as {bot.user}")
 
     try:
+
+        nodes = [
+            wavelink.Node(
+                uri="http://my-lavalink-m9vr.onrender.com:80",
+                password="mypassword"
+            )
+        ]
+
+        await wavelink.Pool.connect(
+            nodes=nodes,
+            client=bot
+        )
+
+        print("✅ Lavalink Connected")
+
+    except Exception as e:
+
+        print(f"Lavalink Error: {e}")
+
+    try:
+
         synced = await bot.tree.sync()
+
         print(f"Synced {len(synced)} commands")
 
     except Exception as e:
+
         print(e)
 
-    print(f"Logged in as {bot.user}")
+    await setup_stats_db()
+
+    if not reset_daily_stats.is_running():
+        reset_daily_stats.start()
+
+    print("✅ Bot Fully Ready")
 
 # ================= PREFIX PLAY =================
 
