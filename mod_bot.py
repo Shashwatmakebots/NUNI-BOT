@@ -2,8 +2,6 @@ import discord
 from discord.ext import commands
 from discord import app_commands
 import asyncio
-import yt_dlp
-from collections import deque
 import os
 import json
 import random
@@ -100,168 +98,250 @@ class RocketView(discord.ui.View):
             f"💰 Cashed out at {self.multiplier:.2f}x\n"
             f"You won {winnings} credits!"
         )
+# ================= LAVALINK MUSIC SYSTEM =================
 
-# ================= AUDIO =================
+import wavelink
 
-async def get_audio(query):
-    ydl_opts = {
-    'format': 'bestaudio/best',
-    'quiet': True,
-    'noplaylist': True,
-    'skip_download': True,
-    'default_search': 'scsearch1',   # 👈 IMPORTANT CHANGE
-    'extract_flat': False
-}
+# Lavalink Node
+@bot.event
+async def on_ready():
 
-    def extract():
-        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-            return ydl.extract_info(query, download=False)
-
-    data = await asyncio.to_thread(extract)
-
-    if 'entries' in data:
-        data = data['entries'][0]
-
-    return data['url'], data['title'], data.get('thumbnail')
-
-# ================= PLAYER =================
-
-async def play_next(ctx_or_interaction):
-    global current_song
-
-    vc = ctx_or_interaction.guild.voice_client
-    if not vc:
-        return
-
-    if not music_queue:
-        current_song = None
-        return
-
-    url, title, thumbnail, requester = music_queue.popleft()
-    current_song = title
-
-    source = discord.FFmpegPCMAudio(
-        url,
-        before_options="-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5",
-        options="-vn"
+    node = wavelink.Node(
+        uri="https://my-lavalink-m9vr.onrender.com",
+        password="mypassword"
     )
 
-    def after(e):
-        async def next_song():
-            await asyncio.sleep(1)
-            await play_next(ctx_or_interaction)
+    await wavelink.Pool.connect(
+        nodes=[node],
+        client=bot
+    )
 
-        asyncio.run_coroutine_threadsafe(next_song(), bot.loop)
+    try:
+        synced = await bot.tree.sync()
+        print(f"Synced {len(synced)} commands")
 
-    vc.play(source, after=after)
+    except Exception as e:
+        print(e)
 
-    # ===== PANEL =====
+    print(f"Logged in as {bot.user}")
+
+# ================= PREFIX PLAY =================
+
+@bot.command(name="play")
+async def play(ctx, *, search: str):
+
+    if not ctx.author.voice:
+        return await ctx.send("❌ Join a VC first.")
+
+    vc: wavelink.Player
+
+    if not ctx.voice_client:
+
+        vc = await ctx.author.voice.channel.connect(
+            cls=wavelink.Player
+        )
+
+    else:
+
+        vc = ctx.voice_client
+
+    tracks = await wavelink.Playable.search(search)
+
+    if not tracks:
+        return await ctx.send("❌ No songs found.")
+
+    track = tracks[0]
+
+    await vc.play(track)
+
     embed = discord.Embed(
         title="🎵 Now Playing",
-        description=f"**{title}**",
+        description=f"**{track.title}**",
         color=discord.Color.blurple()
     )
 
-    embed.add_field(name="👤 Requested by", value=requester.mention, inline=True)
+    embed.add_field(
+        name="Author",
+        value=track.author
+    )
 
-    if music_queue:
-        embed.add_field(name="⏭ Next", value=music_queue[0][1], inline=False)
+    await ctx.send(embed=embed)
 
-    if len(music_queue) > 1:
-        upcoming = "\n".join([song[1] for song in list(music_queue)[:3]])
-        embed.add_field(name="📃 Up Next", value=upcoming, inline=False)
+# ================= SLASH PLAY =================
 
-    if thumbnail:
-        embed.set_thumbnail(url=thumbnail)
+@bot.tree.command(name="play")
+async def slash_play(
+    interaction: discord.Interaction,
+    search: str
+):
 
-    embed.set_footer(text="Music Player")
-
-    view = MusicControls(vc)
-
-    if isinstance(ctx_or_interaction, discord.Interaction):
-        await ctx_or_interaction.followup.send(embed=embed, view=view)
-    else:
-        await ctx_or_interaction.send(embed=embed, view=view)
-
-# ================= BUTTON UI =================
-
-class MusicControls(discord.ui.View):
-    def __init__(self, vc):
-        super().__init__(timeout=None)
-        self.vc = vc
-
-    @discord.ui.button(label="⏸ Pause", style=discord.ButtonStyle.primary)
-    async def pause(self, interaction, button):
-        if self.vc.is_playing():
-            self.vc.pause()
-        await interaction.response.defer()
-
-    @discord.ui.button(label="▶ Resume", style=discord.ButtonStyle.success)
-    async def resume(self, interaction, button):
-        if self.vc.is_paused():
-            self.vc.resume()
-        await interaction.response.defer()
-
-    @discord.ui.button(label="⏭ Skip", style=discord.ButtonStyle.secondary)
-    async def skip(self, interaction, button):
-        self.vc.stop()
-        await interaction.response.defer()
-
-    @discord.ui.button(label="⏹ Stop", style=discord.ButtonStyle.danger)
-    async def stop(self, interaction, button):
-        await self.vc.disconnect()
-        await interaction.response.defer()
-
-# ================= MUSIC COMMANDS =================
-
-@bot.command()
-async def play(ctx, *, query):
-    if not ctx.author.voice:
-        return await ctx.send("Join VC first")
-
-    vc = ctx.guild.voice_client
-    if not vc:
-        vc = await ctx.author.voice.channel.connect()
-
-    url, title, thumbnail = await get_audio(query)
-
-    music_queue.append((url, title, thumbnail, ctx.author))
-
-    if not vc.is_playing():
-        await play_next(ctx)
-    else:
-        await ctx.send(f"➕ Added to queue: {title}")
-
-@tree.command(name="play")
-async def slash_play(interaction: discord.Interaction, query: str):
     await interaction.response.defer()
 
     if not interaction.user.voice:
-        return await interaction.followup.send("Join VC first")
+        return await interaction.followup.send(
+            "❌ Join a VC first."
+        )
 
-    vc = interaction.guild.voice_client
-    if not vc:
-        vc = await interaction.user.voice.channel.connect()
+    vc: wavelink.Player
 
-    url, title, thumbnail = await get_audio(query)
+    if not interaction.guild.voice_client:
 
-    music_queue.append((url, title, thumbnail, interaction.user))
+        vc = await interaction.user.voice.channel.connect(
+            cls=wavelink.Player
+        )
 
-    if not vc.is_playing():
-        await play_next(interaction)
     else:
-        await interaction.followup.send(f"➕ Added: {title}")
+
+        vc = interaction.guild.voice_client
+
+    tracks = await wavelink.Playable.search(search)
+
+    if not tracks:
+        return await interaction.followup.send(
+            "❌ No songs found."
+        )
+
+    track = tracks[0]
+
+    await vc.play(track)
+
+    embed = discord.Embed(
+        title="🎵 Now Playing",
+        description=f"**{track.title}**",
+        color=discord.Color.blurple()
+    )
+
+    embed.add_field(
+        name="Author",
+        value=track.author
+    )
+
+    await interaction.followup.send(embed=embed)
+
+# ================= SKIP =================
 
 @bot.command()
 async def skip(ctx):
-    if ctx.voice_client:
-        ctx.voice_client.stop()
 
-@tree.command(name="skip")
+    vc = ctx.voice_client
+
+    if vc:
+        await vc.skip()
+        await ctx.send("⏭ Skipped")
+
+@bot.tree.command(name="skip")
 async def slash_skip(interaction: discord.Interaction):
-    if interaction.guild.voice_client:
-        interaction.guild.voice_client.stop()
-        await interaction.response.send_message("Skipped")
+
+    vc = interaction.guild.voice_client
+
+    if vc:
+        await vc.skip()
+        await interaction.response.send_message(
+            "⏭ Skipped"
+        )
+
+# ================= PAUSE =================
+
+@bot.command()
+async def pause(ctx):
+
+    vc = ctx.voice_client
+
+    if vc:
+        await vc.pause()
+        await ctx.send("⏸ Paused")
+
+@bot.tree.command(name="pause")
+async def slash_pause(interaction: discord.Interaction):
+
+    vc = interaction.guild.voice_client
+
+    if vc:
+        await vc.pause()
+        await interaction.response.send_message(
+            "⏸ Paused"
+        )
+
+# ================= RESUME =================
+
+@bot.command()
+async def resume(ctx):
+
+    vc = ctx.voice_client
+
+    if vc:
+        await vc.resume()
+        await ctx.send("▶ Resumed")
+
+@bot.tree.command(name="resume")
+async def slash_resume(interaction: discord.Interaction):
+
+    vc = interaction.guild.voice_client
+
+    if vc:
+        await vc.resume()
+        await interaction.response.send_message(
+            "▶ Resumed"
+        )
+
+# ================= STOP =================
+
+@bot.command()
+async def stop(ctx):
+
+    vc = ctx.voice_client
+
+    if vc:
+        await vc.disconnect()
+        await ctx.send("⏹ Disconnected")
+
+@bot.tree.command(name="stop")
+async def slash_stop(interaction: discord.Interaction):
+
+    vc = interaction.guild.voice_client
+
+    if vc:
+        await vc.disconnect()
+        await interaction.response.send_message(
+            "⏹ Disconnected"
+        )
+
+# ================= QUEUE =================
+
+queue = {}
+
+@bot.command()
+async def queue(ctx):
+
+    vc = ctx.voice_client
+
+    if not vc or not vc.queue:
+        return await ctx.send("Queue empty.")
+
+    msg = "\n".join(
+        [f"{i+1}. {t.title}" for i, t in enumerate(vc.queue)]
+    )
+
+    await ctx.send(f"📃 Queue:\n{msg}")
+
+@bot.tree.command(name="queue")
+async def slash_queue(interaction: discord.Interaction):
+
+    vc = interaction.guild.voice_client
+
+    if not vc or not vc.queue:
+        return await interaction.response.send_message(
+            "Queue empty."
+        )
+
+    msg = "\n".join(
+        [f"{i+1}. {t.title}" for i, t in enumerate(vc.queue)]
+    )
+
+    await interaction.response.send_message(
+        f"📃 Queue:\n{msg}"
+    )
+
 
 
 # ================= MODERATION =================
@@ -418,19 +498,6 @@ async def autoreply(interaction: discord.Interaction, trigger: str, response: st
 
 #----------auto response----------
 
-@bot.event
-async def on_message(message):
-    if message.author.bot:
-        return
-
-    content = message.content.lower()
-
-    for trigger, reply in autoreplies.items():
-        if trigger in content:
-            await message.channel.send(reply)
-            break
-
-    await bot.process_commands(message)
 
 @bot.tree.command(name="listautoreplies", description="Show all auto replies")
 @app_commands.checks.has_permissions(administrator=True)
@@ -1297,35 +1364,6 @@ async def ensure_user(user_id):
         """, (user_id,))
         await db.commit()
 
-# ==============================
-# TRACK MESSAGES
-# ==============================
-
-@bot.event
-async def on_message(message):
-
-    if message.author.bot:
-        return
-
-    try:
-
-        await ensure_user(message.author.id)
-
-        async with aiosqlite.connect(DB) as db:
-
-            await db.execute("""
-            UPDATE user_stats
-            SET messages = messages + 1,
-                daily_messages = daily_messages + 1
-            WHERE user_id = ?
-            """, (message.author.id,))
-
-            await db.commit()
-
-    except Exception as e:
-        print(e)
-
-    await bot.process_commands(message)
 
 # ==============================
 # TRACK VOICE TIME
@@ -1677,6 +1715,45 @@ async def on_ready():
         reset_daily_stats.start()
 
     print(f"Logged in as {bot.user}")
+
+@bot.event
+async def on_message(message):
+
+    if message.author.bot:
+        return
+
+    # ================= AUTO REPLIES =================
+
+    content = message.content.lower()
+
+    for trigger, reply in autoreplies.items():
+
+        if trigger in content:
+
+            await message.channel.send(reply)
+            break
+
+    # ================= STATS TRACKING =================
+
+    try:
+
+        await ensure_user(message.author.id)
+
+        async with aiosqlite.connect(DB) as db:
+
+            await db.execute("""
+            UPDATE user_stats
+            SET messages = messages + 1,
+                daily_messages = daily_messages + 1
+            WHERE user_id = ?
+            """, (message.author.id,))
+
+            await db.commit()
+
+    except Exception as e:
+        print(e)
+
+    await bot.process_commands(message)
 
 
 
