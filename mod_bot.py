@@ -96,51 +96,7 @@ class RocketView(discord.ui.View):
             f"💰 Cashed out at {self.multiplier:.2f}x\n"
             f"You won {winnings} credits!"
         )
-# ================= LAVALINK MUSIC SYSTEM =================
-
-import wavelink
-
-@bot.event
-async def on_ready():
-
-    print(f"Logged in as {bot.user}")
-
-    try:
-
-        nodes = [
-            wavelink.Node(
-                uri="http://my-lavalink-m9vr.onrender.com:80",
-                password="mypassword"
-            )
-        ]
-
-        await wavelink.Pool.connect(
-            nodes=nodes,
-            client=bot
-        )
-
-        print("✅ Lavalink Connected")
-
-    except Exception as e:
-
-        print(f"Lavalink Error: {e}")
-
-    try:
-
-        synced = await bot.tree.sync()
-
-        print(f"Synced {len(synced)} commands")
-
-    except Exception as e:
-
-        print(e)
-
-    await setup_stats_db()
-
-    if not reset_daily_stats.is_running():
-        reset_daily_stats.start()
-
-    print("✅ Bot Fully Ready")
+        
 
 # ================= PREFIX PLAY =================
 
@@ -1714,24 +1670,6 @@ async def fixdb(ctx):
 
 
 
-@bot.event
-async def on_ready():
-
-    try:
-        synced = await bot.tree.sync()
-        print(f"Synced {len(synced)} command(s)")
-
-    except Exception as e:
-        print(e)
-
-    # CREATE DATABASE
-    await setup_stats_db()
-
-    # START DAILY RESET
-    if not reset_daily_stats.is_running():
-        reset_daily_stats.start()
-
-    print(f"Logged in as {bot.user}")
 
 @bot.event
 async def on_message(message):
