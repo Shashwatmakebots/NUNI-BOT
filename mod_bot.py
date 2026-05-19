@@ -105,7 +105,7 @@ import wavelink
 async def on_ready():
 
     node = wavelink.Node(
-        uri="https://my-lavalink-m9vr.onrender.com",
+        uri="http://my-lavalink-m9vr.onrender.com:80",
         password="mypassword"
     )
 
