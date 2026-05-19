@@ -1347,7 +1347,7 @@ async def on_voice_state_update(member, before, after):
 
     # JOINED VC
     if before.channel is None and after.channel is not None:
-        voice_times[member.id] = datetime.utcnow()
+        voice_times[member.id] = datetime.now(datetime.UTC)
 
     # LEFT VC
     elif before.channel is not None and after.channel is None:
