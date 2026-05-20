@@ -3,7 +3,7 @@ import io
 import json
 import os
 import random
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timezone
 
 import aiosqlite
 import discord
