@@ -2,5 +2,5 @@ discord.py
 discord.py[voice]
 pillow
 aiosqlite
-wavelink
+wavelink==2.6.3
 PyNaCl
