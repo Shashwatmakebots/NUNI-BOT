@@ -160,7 +160,7 @@ async def play(ctx, *, search: str):
         return
 
     track = tracks[0]
-    await vc.play(track)
+    if vc.playing:     await vc.queue.put_wait(track)     await ctx.send(f"➕ Added to queue: **{track.title}**") else:     await vc.play(track)
 
     embed = discord.Embed(
         title="🎵 Now Playing",
@@ -192,7 +192,7 @@ async def slash_play(interaction: discord.Interaction, search: str):
         return
 
     track = tracks[0]
-    await vc.play(track)
+    if vc.playing:     await vc.queue.put_wait(track)     await interaction.followup.send(f"➕ Added to queue: **{track.title}**") else:     await vc.play(track)
 
     embed = discord.Embed(
         title="🎵 Now Playing",
@@ -286,51 +286,41 @@ async def slash_stop(interaction: discord.Interaction):
 @bot.command(name="queue")
 async def queue_command(ctx):
     vc = ctx.voice_client
-    if not vc or not getattr(vc, "queue", None):
-        await ctx.send("Queue empty.")
+
+    if not vc:
+        await ctx.send("❌ Nothing is playing.")
         return
 
-    msg = "\n".join([f"{i + 1}. {t.title}" for i, t in enumerate(vc.queue)])
+    if vc.queue.is_empty:
+        await ctx.send("📃 Queue is empty.")
+        return
+
+    msg = "\n".join(
+        [f"{i+1}. {track.title}" for i, track in enumerate(vc.queue)]
+    )
+
     await ctx.send(f"📃 Queue:\n{msg}")
 
 
 @bot.tree.command(name="queue")
 async def slash_queue(interaction: discord.Interaction):
     vc = interaction.guild.voice_client
-    if not vc or not getattr(vc, "queue", None):
-        await interaction.response.send_message("Queue empty.")
+
+    if not vc:
+        await interaction.response.send_message("❌ Nothing is playing.")
         return
 
-    msg = "\n".join([f"{i + 1}. {t.title}" for i, t in enumerate(vc.queue)])
+    if vc.queue.is_empty:
+        await interaction.response.send_message("📃 Queue is empty.")
+        return
+
+    msg = "\n".join(
+        [f"{i+1}. {track.title}" for i, track in enumerate(vc.queue)]
+    )
+
     await interaction.response.send_message(f"📃 Queue:\n{msg}")
 
 
-@bot.command(name="join")
-async def join(ctx):
-    if not ctx.author.voice or not ctx.author.voice.channel:
-        await ctx.send("You must be in a voice channel.")
-        return
-
-    channel = ctx.author.voice.channel
-    if ctx.voice_client:
-        await ctx.voice_client.move_to(channel)
-    else:
-        await channel.connect(cls=wavelink.Player)
-    await ctx.send(f"Joined {channel.name}")
-
-
-@bot.tree.command(name="join")
-async def slash_join(interaction: discord.Interaction):
-    if not interaction.user.voice or not interaction.user.voice.channel:
-        await interaction.response.send_message("You must be in a voice channel.", ephemeral=True)
-        return
-
-    channel = interaction.user.voice.channel
-    if interaction.guild.voice_client:
-        await interaction.guild.voice_client.move_to(channel)
-    else:
-        await channel.connect(cls=wavelink.Player)
-    await interaction.response.send_message(f"Joined {channel.name}")
 
 
 # ================= TAGS AND MODERATION =================
@@ -1043,6 +1033,14 @@ async def on_message(message):
         print(e)
 
     await bot.process_commands(message)
+
+@bot.event
+async def on_wavelink_track_end(payload):
+    player = payload.player
+
+    if not player.queue.is_empty:
+        next_track = player.queue.get()
+        await player.play(next_track)
 
 
 @bot.event
