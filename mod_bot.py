@@ -3,7 +3,7 @@ import io
 import json
 import os
 import random
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
 import aiosqlite
 import discord
@@ -136,6 +136,13 @@ async def get_player_for_voice_channel(ctx_or_interaction):
     return await user.voice.channel.connect(cls=wavelink.Player)
 
 
+async def search_tracks(query):
+    try:
+        return await wavelink.Playable.search(query)
+    except wavelink.InvalidNodeException:
+        return None
+
+
 @bot.command(name="play")
 async def play(ctx, *, search: str):
     vc = await get_player_for_voice_channel(ctx)
@@ -143,7 +150,11 @@ async def play(ctx, *, search: str):
         await ctx.send("❌ Join a VC first.")
         return
 
-    tracks = await wavelink.Playable.search(search)
+    tracks = await search_tracks(search)
+    if tracks is None:
+        await ctx.send("❌ Music server is not connected. Check your Lavalink URL/password and restart the bot.")
+        return
+
     if not tracks:
         await ctx.send("❌ No songs found.")
         return
@@ -169,7 +180,13 @@ async def slash_play(interaction: discord.Interaction, search: str):
         await interaction.followup.send("❌ Join a VC first.")
         return
 
-    tracks = await wavelink.Playable.search(search)
+    tracks = await search_tracks(search)
+    if tracks is None:
+        await interaction.followup.send(
+            "❌ Music server is not connected. Check your Lavalink URL/password and restart the bot."
+        )
+        return
+
     if not tracks:
         await interaction.followup.send("❌ No songs found.")
         return
@@ -1038,8 +1055,8 @@ async def on_ready():
 
     try:
         node = wavelink.Node(
-            uri="http://my-lavalink-m9vr.onrender.com",
-            password="mypassword",
+            uri=os.getenv("LAVALINK_URI", "https://my-lavalink-m9vr.onrender.com"),
+            password=os.getenv("LAVALINK_PASSWORD", "mypassword"),
         )
         await wavelink.Pool.connect(client=bot, nodes=[node])
         print("✅ Lavalink Connected")
