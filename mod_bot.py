@@ -192,7 +192,11 @@ async def slash_play(interaction: discord.Interaction, search: str):
         return
 
     track = tracks[0]
-    if vc.playing:     await vc.queue.put_wait(track)     await interaction.followup.send(f"➕ Added to queue: **{track.title}**") else:     await vc.play(track)
+    if vc.playing:
+    await vc.queue.put_wait(track)
+    await ctx.send(f"➕ Added to queue: **{track.title}**")
+else:
+    await vc.play(track)
 
     embed = discord.Embed(
         title="🎵 Now Playing",
@@ -1041,6 +1045,165 @@ async def on_wavelink_track_end(payload):
     if not player.queue.is_empty:
         next_track = player.queue.get()
         await player.play(next_track)
+
+@bot.tree.command(name="limbo", description="Play Limbo")
+async def limbo(interaction: discord.Interaction, bet: int, target: float):
+    user_id = str(interaction.user.id)
+
+    credits[user_id] = credits.get(user_id, 0)
+
+    if bet <= 0:
+        await interaction.response.send_message("❌ Invalid bet.")
+        return
+
+    if target < 1.01:
+        await interaction.response.send_message("❌ Minimum target is 1.01x")
+        return
+
+    if credits[user_id] < bet:
+        await interaction.response.send_message("❌ Not enough credits.")
+        return
+
+    credits[user_id] -= bet
+
+    roll = round(random.uniform(1.00, 10.00), 2)
+
+    if roll >= target:
+        winnings = int(bet * target)
+        credits[user_id] += winnings
+
+        embed = discord.Embed(
+            title="🎯 Limbo Win!",
+            description=(
+                f"Target: **{target}x**\n"
+                f"Rolled: **{roll}x**\n\n"
+                f"💰 Won: {winnings} credits"
+            ),
+            color=discord.Color.green(),
+        )
+    else:
+        embed = discord.Embed(
+            title="💀 Limbo Lose",
+            description=(
+                f"Target: **{target}x**\n"
+                f"Rolled: **{roll}x**\n\n"
+                f"❌ Lost: {bet} credits"
+            ),
+            color=discord.Color.red(),
+        )
+
+    save_credits(credits)
+
+    await interaction.response.send_message(embed=embed)
+
+class MinesView(discord.ui.View):
+    def __init__(self, user, bet):
+        super().__init__(timeout=60)
+
+        self.user = user
+        self.bet = bet
+        self.safe_tiles = 0
+
+        self.mine_position = random.randint(0, 8)
+
+        for i in range(9):
+            self.add_item(MineButton(i))
+
+    async def explode(self, interaction, button):
+        for item in self.children:
+            item.disabled = True
+
+            if isinstance(item, MineButton):
+                if item.position == self.mine_position:
+                    item.label = "💣"
+                else:
+                    item.label = "💎"
+
+        embed = discord.Embed(
+            title="💥 You Hit A Mine!",
+            description=f"Lost {self.bet} credits.",
+            color=discord.Color.red(),
+        )
+
+        await interaction.response.edit_message(embed=embed, view=self)
+
+    async def safe_pick(self, interaction, button):
+        self.safe_tiles += 1
+
+        multiplier = round(1 + (self.safe_tiles * 0.4), 2)
+
+        winnings = int(self.bet * multiplier)
+
+        embed = discord.Embed(
+            title="💎 Safe Tile!",
+            description=(
+                f"Safe Picks: **{self.safe_tiles}**\n"
+                f"Multiplier: **{multiplier}x**\n"
+                f"Cashout Value: **{winnings}**"
+            ),
+            color=discord.Color.green(),
+        )
+
+        await interaction.response.edit_message(embed=embed, view=self)
+
+class MineButton(discord.ui.Button):
+    def __init__(self, position):
+        super().__init__(
+            label="❓",
+            style=discord.ButtonStyle.secondary,
+            row=position // 3
+        )
+
+        self.position = position
+
+    async def callback(self, interaction: discord.Interaction):
+        view: MinesView = self.view
+
+        if interaction.user != view.user:
+            await interaction.response.send_message(
+                "❌ This isn't your game.",
+                ephemeral=True
+            )
+            return
+
+        self.disabled = True
+
+        if self.position == view.mine_position:
+            self.style = discord.ButtonStyle.danger
+            await view.explode(interaction, self)
+        else:
+            self.style = discord.ButtonStyle.success
+            self.label = "💎"
+
+            await view.safe_pick(interaction, self)
+
+@bot.tree.command(name="mines", description="Play Mines")
+async def mines(interaction: discord.Interaction, bet: int):
+    user_id = str(interaction.user.id)
+
+    credits[user_id] = credits.get(user_id, 0)
+
+    if bet <= 0:
+        await interaction.response.send_message("❌ Invalid bet.")
+        return
+
+    if credits[user_id] < bet:
+        await interaction.response.send_message("❌ Not enough credits.")
+        return
+
+    credits[user_id] -= bet
+    save_credits(credits)
+
+    embed = discord.Embed(
+        title="💣 Mines",
+        description="Pick a tile!",
+        color=discord.Color.orange(),
+    )
+
+    await interaction.response.send_message(
+        embed=embed,
+        view=MinesView(interaction.user, bet)
+    )
 
 
 @bot.event
