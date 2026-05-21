@@ -425,31 +425,41 @@ async def role(interaction: discord.Interaction, member: discord.Member, role: d
 
 
 @bot.tree.command(name="autoreply", description="Add custom auto reply")
-if not has_role(interaction.user, BATTLE_ROLE_ID):
-    await interaction.response.send_message(
-        "❌ No permission.",
-        ephemeral=True
-    )
-    return
 async def autoreply(interaction: discord.Interaction, trigger: str, response: str):
+
+    if not has_role(interaction.user, BATTLE_ROLE_ID):
+        await interaction.response.send_message(
+            "❌ No permission.",
+            ephemeral=True
+        )
+        return
+
     autoreplies[trigger.lower()] = response
     save_replies(autoreplies)
-    await interaction.response.send_message(f"Added reply: '{trigger}' → '{response}'")
+
+    await interaction.response.send_message(
+        f"Added reply: '{trigger}' → '{response}'"
+    )
 
 
 @bot.tree.command(name="listautoreplies", description="Show all auto replies")
-if not has_role(interaction.user, BATTLE_ROLE_ID):
-    await interaction.response.send_message(
-        "❌ No permission.",
-        ephemeral=True
-    )
-    return
 async def listautoreplies(interaction: discord.Interaction):
+
+    if not has_role(interaction.user, BATTLE_ROLE_ID):
+        await interaction.response.send_message(
+            "❌ No permission.",
+            ephemeral=True
+        )
+        return
+
     if not autoreplies:
-        await interaction.response.send_message("No auto replies setup.")
+        await interaction.response.send_message(
+            "No auto replies setup."
+        )
         return
 
     msg = "**Auto Replies:**\n"
+
     for trigger, reply in autoreplies.items():
         msg += f"• `{trigger}` → `{reply}`\n"
 
@@ -457,40 +467,57 @@ async def listautoreplies(interaction: discord.Interaction):
 
 
 @bot.tree.command(name="removeautoreply", description="Remove an auto reply")
-if not has_role(interaction.user, BATTLE_ROLE_ID):
-    await interaction.response.send_message(
-        "❌ No permission.",
-        ephemeral=True
-    )
-    return
 async def removeautoreply(interaction: discord.Interaction, trigger: str):
+
+    if not has_role(interaction.user, BATTLE_ROLE_ID):
+        await interaction.response.send_message(
+            "❌ No permission.",
+            ephemeral=True
+        )
+        return
+
     trigger = trigger.lower()
+
     if trigger not in autoreplies:
-        await interaction.response.send_message("❌ Trigger not found.")
+        await interaction.response.send_message(
+            "❌ Trigger not found."
+        )
         return
 
     del autoreplies[trigger]
     save_replies(autoreplies)
-    await interaction.response.send_message(f"✅ Removed auto reply for `{trigger}`")
+
+    await interaction.response.send_message(
+        f"✅ Removed auto reply for `{trigger}`"
+    )
 
 
 # ================= CREDITS AND GAMES =================
 
 @bot.tree.command(name="setwinchance")
-if not has_role(interaction.user, BATTLE_ROLE_ID):
-    await interaction.response.send_message(
-        "❌ No permission.",
-        ephemeral=True
-    )
-    return
 async def setwinchance(interaction: discord.Interaction, percent: int):
+
+    if not has_role(interaction.user, BATTLE_ROLE_ID):
+        await interaction.response.send_message(
+            "❌ No permission.",
+            ephemeral=True
+        )
+        return
+
     if percent < 1 or percent > 100:
-        await interaction.response.send_message("❌ Use 1-100", ephemeral=True)
+        await interaction.response.send_message(
+            "❌ Use 1-100",
+            ephemeral=True
+        )
         return
 
     game_settings["global_win_chance"] = percent
     save_game_settings(game_settings)
-    await interaction.response.send_message(f"✅ Win chance set to {percent}%", ephemeral=True)
+
+    await interaction.response.send_message(
+        f"✅ Win chance set to {percent}%",
+        ephemeral=True
+    )
 
 
 @bot.tree.command(name="balance")
@@ -619,17 +646,29 @@ async def rocket(interaction: discord.Interaction, bet: int, auto_cashout: float
 
 
 @bot.tree.command(name="addcredits", description="Add credits to a user")
-if not has_role(interaction.user, BATTLE_ROLE_ID):
+async def addcredits(
+    interaction: discord.Interaction,
+    member: discord.Member,
+    amount: int
+):
+
+    if not has_role(interaction.user, BATTLE_ROLE_ID):
+        await interaction.response.send_message(
+            "❌ No permission.",
+            ephemeral=True
+        )
+        return
+
+    user_id = str(member.id)
+
+    credits[user_id] = credits.get(user_id, 0) + amount
+
+    save_credits(credits)
+
     await interaction.response.send_message(
-        "❌ No permission.",
+        f"✅ Added {amount} credits to {member.mention}",
         ephemeral=True
     )
-    return
-async def addcredits(interaction: discord.Interaction, member: discord.Member, amount: int):
-    user_id = str(member.id)
-    credits[user_id] = credits.get(user_id, 0) + amount
-    save_credits(credits)
-    await interaction.response.send_message(f"✅ Added {amount} credits to {member.mention}", ephemeral=True)
 
 
 @bot.tree.command(name="plinko", description="Play Plinko")
@@ -1280,13 +1319,15 @@ async def mines(interaction: discord.Interaction, bet: int):
     )
 
 @bot.tree.command(name="rigplinko")
-if not has_role(interaction.user, BATTLE_ROLE_ID):
-    await interaction.response.send_message(
-        "❌ No permission.",
-        ephemeral=True
-    )
-    return
 async def rigplinko(interaction: discord.Interaction):
+
+    if not has_role(interaction.user, BATTLE_ROLE_ID):
+        await interaction.response.send_message(
+            "❌ No permission.",
+            ephemeral=True
+        )
+        return
+
     game_settings["plinko_rigged"] = True
     save_game_settings(game_settings)
 
@@ -1297,13 +1338,15 @@ async def rigplinko(interaction: discord.Interaction):
 
 
 @bot.tree.command(name="unrigplinko")
-if not has_role(interaction.user, BATTLE_ROLE_ID):
-    await interaction.response.send_message(
-        "❌ No permission.",
-        ephemeral=True
-    )
-    return
 async def unrigplinko(interaction: discord.Interaction):
+
+    if not has_role(interaction.user, BATTLE_ROLE_ID):
+        await interaction.response.send_message(
+            "❌ No permission.",
+            ephemeral=True
+        )
+        return
+
     game_settings["plinko_rigged"] = False
     save_game_settings(game_settings)
 
@@ -1313,13 +1356,15 @@ async def unrigplinko(interaction: discord.Interaction):
     )
 
 @bot.tree.command(name="rigmines")
-if not has_role(interaction.user, BATTLE_ROLE_ID):
-    await interaction.response.send_message(
-        "❌ No permission.",
-        ephemeral=True
-    )
-    return
 async def rigmines(interaction: discord.Interaction):
+
+    if not has_role(interaction.user, BATTLE_ROLE_ID):
+        await interaction.response.send_message(
+            "❌ No permission.",
+            ephemeral=True
+        )
+        return
+
     game_settings["mines_rigged"] = True
     save_game_settings(game_settings)
 
@@ -1330,13 +1375,15 @@ async def rigmines(interaction: discord.Interaction):
 
 
 @bot.tree.command(name="unrigmines")
-if not has_role(interaction.user, BATTLE_ROLE_ID):
-    await interaction.response.send_message(
-        "❌ No permission.",
-        ephemeral=True
-    )
-    return
 async def unrigmines(interaction: discord.Interaction):
+
+    if not has_role(interaction.user, BATTLE_ROLE_ID):
+        await interaction.response.send_message(
+            "❌ No permission.",
+            ephemeral=True
+        )
+        return
+
     game_settings["mines_rigged"] = False
     save_game_settings(game_settings)
 
@@ -1346,13 +1393,15 @@ async def unrigmines(interaction: discord.Interaction):
     )
 
 @bot.tree.command(name="riglimbo")
-if not has_role(interaction.user, BATTLE_ROLE_ID):
-    await interaction.response.send_message(
-        "❌ No permission.",
-        ephemeral=True
-    )
-    return
 async def riglimbo(interaction: discord.Interaction):
+
+    if not has_role(interaction.user, BATTLE_ROLE_ID):
+        await interaction.response.send_message(
+            "❌ No permission.",
+            ephemeral=True
+        )
+        return
+
     game_settings["limbo_rigged"] = True
     save_game_settings(game_settings)
 
@@ -1363,13 +1412,15 @@ async def riglimbo(interaction: discord.Interaction):
 
 
 @bot.tree.command(name="unriglimbo")
-if not has_role(interaction.user, BATTLE_ROLE_ID):
-    await interaction.response.send_message(
-        "❌ No permission.",
-        ephemeral=True
-    )
-    return
 async def unriglimbo(interaction: discord.Interaction):
+
+    if not has_role(interaction.user, BATTLE_ROLE_ID):
+        await interaction.response.send_message(
+            "❌ No permission.",
+            ephemeral=True
+        )
+        return
+
     game_settings["limbo_rigged"] = False
     save_game_settings(game_settings)
 
