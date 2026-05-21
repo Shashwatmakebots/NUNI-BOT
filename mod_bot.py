@@ -685,9 +685,11 @@ async def plinko(interaction: discord.Interaction, bet: int):
         return
 
     credits[user_id] -= bet
-    multipliers = [0.2, 0.5, 0.8, 1.2, 2, 5, 10]
-    weights = [30, 25, 20, 15, 7, 2, 1]
-    if game_settings.get("plinko_rigged", False):
+
+multipliers = [0.2, 0.5, 0.8, 1.2, 2, 5, 10]
+weights = [30, 25, 20, 15, 7, 2, 1]
+
+if game_settings.get("plinko_rigged", False):
     multiplier = random.choice([0.2, 0.5])
 else:
     multiplier = random.choices(
