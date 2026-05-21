@@ -671,42 +671,51 @@ async def addcredits(
     )
 
 
-@bot.tree.command(name="plinko", description="Play Plinko")
+@bot.tree.command(name="plinko")
 async def plinko(interaction: discord.Interaction, bet: int):
+
     user_id = str(interaction.user.id)
+
     credits[user_id] = credits.get(user_id, 0)
 
-    if bet <= 0:
-        await interaction.response.send_message("❌ Invalid bet.")
-        return
-
     if credits[user_id] < bet:
-        await interaction.response.send_message("❌ Not enough credits.")
+        await interaction.response.send_message(
+            "❌ Not enough credits."
+        )
         return
 
     credits[user_id] -= bet
 
-multipliers = [0.2, 0.5, 0.8, 1.2, 2, 5, 10]
-weights = [30, 25, 20, 15, 7, 2, 1]
+    multipliers = [0.2, 0.5, 0.8, 1.2, 2, 5, 10]
+    weights = [30, 25, 20, 15, 7, 2, 1]
 
-if game_settings.get("plinko_rigged", False):
-    multiplier = random.choice([0.2, 0.5])
-else:
-    multiplier = random.choices(
-        multipliers,
-        weights=weights
-    )[0]
-    
+    if game_settings.get("plinko_rigged", False):
+        multiplier = random.choice([0.2, 0.5])
+    else:
+        multiplier = random.choices(
+            multipliers,
+            weights=weights
+        )[0]
+
     winnings = int(bet * multiplier)
+
     credits[user_id] += winnings
+
     save_credits(credits)
 
     embed = discord.Embed(
         title="🎯 Plinko",
-        description=f"Ball landed on **{multiplier}x**\n\n💰 Won: {winnings} credits",
-        color=discord.Color.blurple(),
+        description=(
+            f"Bet: {bet}\n"
+            f"Multiplier: {multiplier}x\n"
+            f"Won: {winnings}"
+        ),
+        color=discord.Color.green()
     )
-    await interaction.response.send_message(embed=embed)
+
+    await interaction.response.send_message(
+        embed=embed
+    )
 
 
 # ================= MAYOR BATTLE AND TICKETS =================
