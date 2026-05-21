@@ -160,7 +160,7 @@ async def play(ctx, *, search: str):
         return
 
     track = tracks[0]
-    if vc.playing:
+if vc.playing:
     await vc.queue.put_wait(track)
     await ctx.send(f"➕ Added to queue: **{track.title}**")
 else:
@@ -196,7 +196,7 @@ async def slash_play(interaction: discord.Interaction, search: str):
         return
 
     track = tracks[0]
-    if vc.playing:
+if vc.playing:
     await vc.queue.put_wait(track)
     await ctx.send(f"➕ Added to queue: **{track.title}**")
 else:
