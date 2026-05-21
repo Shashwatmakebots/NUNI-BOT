@@ -146,13 +146,17 @@ async def search_tracks(query):
 @bot.command(name="play")
 async def play(ctx, *, search: str):
     vc = await get_player_for_voice_channel(ctx)
+
     if not vc:
         await ctx.send("❌ Join a VC first.")
         return
 
     tracks = await search_tracks(search)
+
     if tracks is None:
-        await ctx.send("❌ Music server is not connected. Check your Lavalink URL/password and restart the bot.")
+        await ctx.send(
+            "❌ Music server is not connected."
+        )
         return
 
     if not tracks:
@@ -160,18 +164,23 @@ async def play(ctx, *, search: str):
         return
 
     track = tracks[0]
-if vc.playing:
-    await vc.queue.put_wait(track)
-    await ctx.send(f"➕ Added to queue: **{track.title}**")
-else:
-    await vc.play(track)
+
+    if vc.playing:
+        await vc.queue.put_wait(track)
+        await ctx.send(
+            f"➕ Added to queue: **{track.title}**"
+        )
+    else:
+        await vc.play(track)
 
     embed = discord.Embed(
         title="🎵 Now Playing",
         description=f"**{track.title}**",
         color=discord.Color.blurple(),
     )
+
     embed.add_field(name="Author", value=track.author)
+
     await ctx.send(embed=embed)
 
 
@@ -180,14 +189,16 @@ async def slash_play(interaction: discord.Interaction, search: str):
     await interaction.response.defer()
 
     vc = await get_player_for_voice_channel(interaction)
+
     if not vc:
         await interaction.followup.send("❌ Join a VC first.")
         return
 
     tracks = await search_tracks(search)
+
     if tracks is None:
         await interaction.followup.send(
-            "❌ Music server is not connected. Check your Lavalink URL/password and restart the bot."
+            "❌ Music server is not connected."
         )
         return
 
@@ -196,18 +207,23 @@ async def slash_play(interaction: discord.Interaction, search: str):
         return
 
     track = tracks[0]
-if vc.playing:
-    await vc.queue.put_wait(track)
-    await ctx.send(f"➕ Added to queue: **{track.title}**")
-else:
-    await vc.play(track)
+
+    if vc.playing:
+        await vc.queue.put_wait(track)
+        await interaction.followup.send(
+            f"➕ Added to queue: **{track.title}**"
+        )
+    else:
+        await vc.play(track)
 
     embed = discord.Embed(
         title="🎵 Now Playing",
         description=f"**{track.title}**",
         color=discord.Color.blurple(),
     )
+
     embed.add_field(name="Author", value=track.author)
+
     await interaction.followup.send(embed=embed)
 
 
