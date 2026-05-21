@@ -160,7 +160,11 @@ async def play(ctx, *, search: str):
         return
 
     track = tracks[0]
-    if vc.playing:     await vc.queue.put_wait(track)     await ctx.send(f"➕ Added to queue: **{track.title}**") else:     await vc.play(track)
+    if vc.playing:
+    await vc.queue.put_wait(track)
+    await ctx.send(f"➕ Added to queue: **{track.title}**")
+else:
+    await vc.play(track)
 
     embed = discord.Embed(
         title="🎵 Now Playing",
