@@ -1645,7 +1645,7 @@ async def invites_prefix(ctx, member: discord.Member = None):
 
 
 
-    @bot.event
+@bot.event
 async def on_ready():
 
     print(f"Logged in as {bot.user}")
