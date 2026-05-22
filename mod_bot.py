@@ -11,6 +11,8 @@ import wavelink
 from discord import app_commands
 from discord.ext import commands, tasks
 from PIL import Image, ImageDraw, ImageFont
+from collections import defaultdict
+from datetime import datetime, timezone
 
 
 print(os.getcwd())
@@ -19,6 +21,24 @@ LOG_CHANNEL_ID = 1499818861850132490
 
 intents = discord.Intents.all()
 bot = commands.Bot(command_prefix=",", intents=intents)
+
+invite_cache = {}
+invite_data = {}
+
+def load_invites():
+    global invite_data
+
+    try:
+        with open("invites.json", "r") as f:
+            invite_data = json.load(f)
+    except:
+        invite_data = {}
+
+def save_invites():
+    with open("invites.json", "w") as f:
+        json.dump(invite_data, f, indent=4)
+
+load_invites()
 
 
 def load_json(filename, default):
@@ -1440,6 +1460,187 @@ async def unriglimbo(interaction: discord.Interaction):
         ephemeral=True
     )
 
+@bot.event
+async def on_member_join(member):
+
+    guild = member.guild
+
+    try:
+        new_invites = await guild.invites()
+        old_invites = invite_cache.get(guild.id, [])
+
+        used_invite = None
+
+        for new_inv in new_invites:
+            for old_inv in old_invites:
+
+                if (
+                    new_inv.code == old_inv.code
+                    and new_inv.uses > old_inv.uses
+                ):
+                    used_invite = new_inv
+                    break
+
+        invite_cache[guild.id] = new_invites
+
+        if used_invite is None:
+            return
+
+        inviter = str(used_invite.inviter.id)
+
+        if inviter not in invite_data:
+            invite_data[inviter] = {
+                "total": 0,
+                "fake": 0,
+                "left": 0,
+                "rejoin": 0
+            }
+
+        account_age_days = (
+            datetime.now(timezone.utc)
+            - member.created_at
+        ).days
+
+        fake = False
+
+        if account_age_days < 7:
+            fake = True
+
+        joins = invite_data.get(
+            str(member.id),
+            {}
+        ).get("joined_before", False)
+
+        if joins:
+            invite_data[inviter]["rejoin"] += 1
+
+        if fake:
+            invite_data[inviter]["fake"] += 1
+        else:
+            invite_data[inviter]["total"] += 1
+
+        invite_data[str(member.id)] = {
+            "invited_by": inviter,
+            "joined_before": True
+        }
+
+        save_invites()
+
+    except Exception as e:
+        print(e)
+
+@bot.event
+async def on_member_remove(member):
+
+    user_data = invite_data.get(str(member.id))
+
+    if not user_data:
+        return
+
+    inviter = user_data.get("invited_by")
+
+    if not inviter:
+        return
+
+    if inviter not in invite_data:
+        return
+
+    invite_data[inviter]["left"] += 1
+
+    save_invites()
+
+@bot.tree.command(name="invites")
+async def invites(
+    interaction: discord.Interaction,
+    member: discord.Member = None
+):
+
+    member = member or interaction.user
+
+    data = invite_data.get(
+        str(member.id),
+        {
+            "total": 0,
+            "fake": 0,
+            "left": 0,
+            "rejoin": 0
+        }
+    )
+
+    real = (
+        data["total"]
+        - data["fake"]
+        - data["left"]
+    )
+
+    embed = discord.Embed(
+        title=f"📨 {member.name}'s Invites",
+        color=discord.Color.blurple()
+    )
+
+    embed.add_field(
+        name="✅ Total",
+        value=data["total"]
+    )
+
+    embed.add_field(
+        name="🤖 Fake",
+        value=data["fake"]
+    )
+
+    embed.add_field(
+        name="🔄 Rejoins",
+        value=data["rejoin"]
+    )
+
+    embed.add_field(
+        name="📤 Left",
+        value=data["left"]
+    )
+
+    embed.add_field(
+        name="🎯 Real",
+        value=max(real, 0)
+    )
+
+    await interaction.response.send_message(
+        embed=embed
+    )
+
+@bot.command(name="invites")
+async def invites_prefix(ctx, member: discord.Member = None):
+
+    member = member or ctx.author
+
+    data = invite_data.get(
+        str(member.id),
+        {
+            "total": 0,
+            "fake": 0,
+            "left": 0,
+            "rejoin": 0
+        }
+    )
+
+    real = (
+        data["total"]
+        - data["fake"]
+        - data["left"]
+    )
+
+    embed = discord.Embed(
+        title=f"📨 {member.name}'s Invites",
+        color=discord.Color.green()
+    )
+
+    embed.add_field(name="✅ Total", value=data["total"])
+    embed.add_field(name="🤖 Fake", value=data["fake"])
+    embed.add_field(name="🔄 Rejoins", value=data["rejoin"])
+    embed.add_field(name="📤 Left", value=data["left"])
+    embed.add_field(name="🎯 Real", value=max(real, 0))
+
+    await ctx.send(embed=embed)
+
 
 
 
@@ -1472,6 +1673,12 @@ async def on_ready():
 
     if not reset_daily_stats.is_running():
         reset_daily_stats.start()
+
+for guild in bot.guilds:
+    try:
+        invite_cache[guild.id] = await guild.invites()
+    except:
+        pass
 
     print("✅ Bot Fully Ready")
 
