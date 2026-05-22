@@ -1645,8 +1645,9 @@ async def invites_prefix(ctx, member: discord.Member = None):
 
 
 
-@bot.event
+    @bot.event
 async def on_ready():
+
     print(f"Logged in as {bot.user}")
 
     bot.add_view(SupportPanel())
@@ -1655,17 +1656,30 @@ async def on_ready():
 
     try:
         node = wavelink.Node(
-            uri=os.getenv("LAVALINK_URI", "https://my-lavalink-m9vr.onrender.com"),
-            password=os.getenv("LAVALINK_PASSWORD", "mypassword"),
+            uri=os.getenv(
+                "LAVALINK_URI",
+                "https://my-lavalink-url"
+            ),
+            password=os.getenv(
+                "LAVALINK_PASSWORD",
+                "mypassword"
+            ),
         )
-        await wavelink.Pool.connect(client=bot, nodes=[node])
+
+        await wavelink.Pool.connect(
+            client=bot,
+            nodes=[node]
+        )
+
         print("✅ Lavalink Connected")
+
     except Exception as e:
         print(f"Lavalink Error: {e}")
 
     try:
         synced = await bot.tree.sync()
         print(f"Synced {len(synced)} commands")
+
     except Exception as e:
         print(e)
 
@@ -1674,11 +1688,11 @@ async def on_ready():
     if not reset_daily_stats.is_running():
         reset_daily_stats.start()
 
-for guild in bot.guilds:
-    try:
-        invite_cache[guild.id] = await guild.invites()
-    except:
-        pass
+    for guild in bot.guilds:
+        try:
+            invite_cache[guild.id] = await guild.invites()
+        except:
+            pass
 
     print("✅ Bot Fully Ready")
 
