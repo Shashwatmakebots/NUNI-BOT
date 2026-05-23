@@ -19,7 +19,10 @@ print(os.getcwd())
 
 LOG_CHANNEL_ID = 1499818861850132490
 
-intents = discord.Intents.all()
+intents = discord.Intents.default()
+intents.voice_states = True
+intents.message_content = True
+intents.members = True
 bot = commands.Bot(command_prefix=",", intents=intents)
 
 invite_cache = {}
@@ -153,7 +156,10 @@ async def get_player_for_voice_channel(ctx_or_interaction):
     if guild.voice_client:
         return guild.voice_client
 
-    return await user.voice.channel.connect(cls=wavelink.Player)
+    return await user.voice.channel.connect(
+    cls=wavelink.Player,
+    self_deaf=True
+)
 
 
 async def search_tracks(query):
