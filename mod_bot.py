@@ -1654,11 +1654,11 @@ async def on_ready():
     bot.add_view(TicketControls())
     bot.add_view(DeleteTicketView())
 
-    try:
- node = wavelink.Node(
-    uri="https://lava-v4.ajieblogs.eu.org",
-    password="https://dsc.gg/ajidevserver"
-)
+        try:
+            node = wavelink.Node(
+            uri="https://lava-v4.ajieblogs.eu.org",
+            password="https://dsc.gg/ajidevserver"
+        )
 
         await wavelink.Pool.connect(
             client=bot,
