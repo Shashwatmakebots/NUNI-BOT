@@ -1655,16 +1655,10 @@ async def on_ready():
     bot.add_view(DeleteTicketView())
 
     try:
-        node = wavelink.Node(
-            uri=os.getenv(
-                "LAVALINK_URI",
-                "https://my-lavalink-url"
-            ),
-            password=os.getenv(
-                "LAVALINK_PASSWORD",
-                "mypassword"
-            ),
-        )
+ node = wavelink.Node(
+    uri="https://lava-v4.ajieblogs.eu.org",
+    password="https://dsc.gg/ajidevserver"
+)
 
         await wavelink.Pool.connect(
             client=bot,
