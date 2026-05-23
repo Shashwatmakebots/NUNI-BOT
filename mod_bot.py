@@ -143,6 +143,7 @@ class RocketView(discord.ui.View):
 # ================= MUSIC =================
 
 async def get_player_for_voice_channel(ctx_or_interaction):
+
     if isinstance(ctx_or_interaction, discord.Interaction):
         user = ctx_or_interaction.user
         guild = ctx_or_interaction.guild
@@ -153,13 +154,15 @@ async def get_player_for_voice_channel(ctx_or_interaction):
     if not user.voice or not user.voice.channel:
         return None
 
-    if guild.voice_client:
-        return guild.voice_client
+    vc = guild.voice_client
 
-    return await user.voice.channel.connect(
-    cls=wavelink.Player,
-    self_deaf=True
-)
+    if vc is None:
+        vc = await user.voice.channel.connect(
+            cls=wavelink.Player,
+            self_deaf=True
+        )
+
+    return vc
 
 
 async def search_tracks(query):
@@ -1662,9 +1665,9 @@ async def on_ready():
 
     try:
         node = wavelink.Node(
-            uri="https://lava-v4.ajieblogs.eu.org",
-            password="https://dsc.gg/ajidevserver"
-        )
+    uri="http://nexus.voidhosting.vip:6004",
+    password="cocaine"
+)
 
         await wavelink.Pool.connect(
             client=bot,
