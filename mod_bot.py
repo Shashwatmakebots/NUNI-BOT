@@ -1665,8 +1665,8 @@ async def on_ready():
 
     try:
         node = wavelink.Node(
-    uri="http://nexus.voidhosting.vip:6004",
-    password="cocaine"
+    uri="https://lava-v4.ajieblogs.eu.org",
+    password="https://dsc.gg/ajidevserver"
 )
 
         await wavelink.Pool.connect(
