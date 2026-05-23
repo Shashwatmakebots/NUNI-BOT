@@ -1660,7 +1660,10 @@ async def on_ready():
             password="https://dsc.gg/ajidevserver"
         )
 
-        await node.connect(client=bot)
+        await wavelink.Pool.connect(
+            client=bot,
+            nodes=[node]
+        )
 
         print("✅ Lavalink Connected")
 
